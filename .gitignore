@@ -1,0 +1,44 @@
+# === Rust / Cargo ===
+/target/
+/Cargo.lock        
+**/*.rs.bk
+*.pdb
+
+# === Editors / IDEs ===
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# === Logs & temp ===
+*.log
+*.tmp
+*.bak
+
+# === OS Artifacts ===
+.DS_Store
+Thumbs.db
+
+# === Appiman specific ===
+# linuxdeploy, appimagetool, runtime blobs, etc.
+linuxdeploy*.AppImage
+appimagetool*.AppImage
+appimagekit-*
+*.AppImage
+
+# === Distribution / Packaging ===
+# compiled binaries created by cargo build --release
+appiman
+appiman.exe
+
+# Debian / tarball artifacts if you ever build them
+*.deb
+*.rpm
+*.tar.gz
+
+# === Local development dirs ===
+.env
+# === AppImage build outputs ===
+appiman.AppDir/
+*.AppDir/
+AppDir/

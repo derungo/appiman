@@ -1,0 +1,7 @@
+[Unit]
+Description=Move user-downloaded AppImages to central dir
+
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/move-appimages.sh

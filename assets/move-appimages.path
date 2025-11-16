@@ -1,0 +1,11 @@
+[Unit]
+Description=Watch user home dirs for AppImage downloads
+
+
+[Path]
+PathModified=/home
+PathChanged=/home
+
+
+[Install]
+WantedBy=multi-user.target
