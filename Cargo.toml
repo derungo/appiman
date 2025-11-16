@@ -1,0 +1,11 @@
+[package]
+name = "appiman"
+version = "0.2.0"
+edition = "2024"
+
+[dependencies]
+which = "5"
+tempfile = "3"
+dirs = "5"
+regex = "1"
+nix = { version = "0.27", features = ["user"] }

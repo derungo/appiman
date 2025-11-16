@@ -1,0 +1,7 @@
+[Unit]
+Description=Register AppImages system-wide
+
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/register-appimages.sh
