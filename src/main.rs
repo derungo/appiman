@@ -1,4 +1,5 @@
 mod clean;
+mod core;
 mod ingest;
 mod privileges;
 mod scan;
