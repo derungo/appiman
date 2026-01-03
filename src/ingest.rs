@@ -13,7 +13,7 @@ fn move_script_path() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from(DEFAULT_MOVE_SCRIPT))
 }
 
-fn run_move_script(script_path: &Path) -> io::Result<()> {
+pub(crate) fn run_move_script(script_path: &Path) -> io::Result<()> {
     if !script_path.exists() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,

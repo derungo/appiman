@@ -12,7 +12,7 @@ fn register_script_path() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from(DEFAULT_REGISTER_SCRIPT))
 }
 
-fn run_register_script(script_path: &Path) -> io::Result<()> {
+pub(crate) fn run_register_script(script_path: &Path) -> io::Result<()> {
     if !script_path.exists() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
