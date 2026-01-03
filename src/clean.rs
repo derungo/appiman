@@ -1,17 +1,25 @@
 // src/clean.rs
 
+use crate::config::Config;
 use crate::privileges::require_root;
 use regex::Regex;
 use std::fs;
 use std::io;
 
-const BIN_DIR: &str = "/opt/applications/bin";
-const SYMLINK_DIR: &str = "/usr/local/bin";
-const DESKTOP_DIR: &str = "/usr/share/applications";
-const ICON_DIR: &str = "/opt/applications/icons";
-
 pub fn run_cleanup() -> io::Result<()> {
     require_root()?;
+
+    let config = Config::load().map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("Failed to load config: {}", e),
+        )
+    })?;
+
+    let bin_dir = config.bin_dir();
+    let symlink_dir = config.symlink_dir();
+    let desktop_dir = config.desktop_dir();
+    let icon_dir = config.icon_dir();
 
     println!("🧹 Cleaning up legacy AppImage files and artifacts...");
 
@@ -20,7 +28,7 @@ pub fn run_cleanup() -> io::Result<()> {
     let mut had_errors = false;
 
     // Clean bin directory
-    if let Ok(entries) = fs::read_dir(BIN_DIR) {
+    if let Ok(entries) = fs::read_dir(&bin_dir) {
         for entry in entries.flatten() {
             let name = entry.file_name().to_string_lossy().into_owned();
             if re.is_match(&name) {
@@ -35,7 +43,7 @@ pub fn run_cleanup() -> io::Result<()> {
     }
 
     // Clean broken or legacy symlinks
-    if let Ok(entries) = fs::read_dir(SYMLINK_DIR) {
+    if let Ok(entries) = fs::read_dir(&symlink_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
             if let Ok(target) = fs::read_link(&path) {
@@ -52,12 +60,13 @@ pub fn run_cleanup() -> io::Result<()> {
     }
 
     // Clean legacy .desktop entries
-    if let Ok(entries) = fs::read_dir(DESKTOP_DIR) {
+    if let Ok(entries) = fs::read_dir(&desktop_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.extension().map(|e| e == "desktop").unwrap_or(false) {
                 if let Ok(content) = fs::read_to_string(&path) {
-                    if content.contains(BIN_DIR) && re.is_match(&content) {
+                    if content.contains(bin_dir.to_string_lossy().as_ref()) && re.is_match(&content)
+                    {
                         if let Err(err) = fs::remove_file(&path) {
                             had_errors = true;
                             eprintln!(
@@ -75,7 +84,7 @@ pub fn run_cleanup() -> io::Result<()> {
     }
 
     // Clean stale icons
-    if let Ok(entries) = fs::read_dir(ICON_DIR) {
+    if let Ok(entries) = fs::read_dir(&icon_dir) {
         for entry in entries.flatten() {
             let name = entry.file_name().to_string_lossy().into_owned();
             if re.is_match(&name) {
