@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 use thiserror::Error;
 
-use super::normalize_appimage_name;
 use super::Metadata;
+use super::normalize_appimage_name;
 
 #[derive(Debug, Error)]
 pub enum AppImageError {
