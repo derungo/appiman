@@ -88,8 +88,11 @@ appiman <command>
 Command	Description
 init	Creates /opt/applications/*, installs helper scripts and systemd units. Requires root.
 enable	Enables and starts the watcher service + path units. Requires root.
+disable	Disables and stops watcher path units. Requires root.
 status	Shows the health of all watcher paths and services.
-scan	Manually re-runs the registrar to process all AppImages.
+ingest	Moves user-downloaded AppImages into /opt/applications/raw. Requires root.
+scan	Manually re-runs the registrar to process all AppImages. Requires root.
+sync	Runs ingest + scan (full manual ingestion + registration). Requires root.
 clean	Removes stale entries, versioned duplicates, and legacy artifacts. Requires root.
 help	Prints built-in help.
 
@@ -98,8 +101,11 @@ Typical first-time setup:
 sudo appiman init
 sudo appiman enable
 
-
 After that, any .AppImage downloaded by any user will be ingested and registered automatically.
+
+Manual one-shot processing (without watchers):
+
+sudo appiman sync
 
 🏗️ Building from Source
 
