@@ -1,6 +1,6 @@
 // src/setup.rs
 
-use nix::unistd::Uid;
+use crate::privileges::require_root;
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -69,24 +69,19 @@ fn initialize_impl(base_dir: &Path, script_dir: &Path, unit_dir: &Path) -> io::R
     Ok(())
 }
 
-pub fn initialize() {
+pub fn initialize() -> io::Result<()> {
     println!("🔧 Initializing AppImage management system...");
 
-    if !Uid::effective().is_root() {
-        eprintln!("❌ This command must be run with sudo/root.");
-        std::process::exit(1);
-    }
+    require_root()?;
 
     let base_dir = Path::new("/opt/applications");
     let script_dir = Path::new("/usr/local/sbin");
     let unit_dir = Path::new("/etc/systemd/system");
 
-    if let Err(e) = initialize_impl(base_dir, script_dir, unit_dir) {
-        eprintln!("❌ Initialization failed: {}", e);
-        std::process::exit(1);
-    }
+    initialize_impl(base_dir, script_dir, unit_dir)?;
 
     println!("✅ Initialization complete. Run `appiman enable` to activate services.");
+    Ok(())
 }
 
 #[cfg(test)]
