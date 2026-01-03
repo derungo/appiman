@@ -640,7 +640,7 @@ repos:
 ### Testing
 - [ ] Unit tests for all modules (80%+ coverage)
 - [ ] Integration tests for full workflows
-- [ ] Property-based tests for normalization
+- [x] Property-based tests for normalization
 - [ ] Comparison tests with shell scripts
 - [ ] Performance benchmarks
 
