@@ -19,6 +19,7 @@ fn main() -> ExitCode {
         }
         Some("init") => run_and_report(setup::initialize),
         Some("enable") => run_and_report(systemd::enable_all),
+        Some("disable") => run_and_report(systemd::disable_all),
         Some("status") => run_and_report(systemd::print_status),
         Some("clean") => run_and_report(clean::run_cleanup),
         Some("ingest") => run_and_report(ingest::run_ingest),
@@ -46,6 +47,7 @@ fn print_help() {
     println!("Commands:");
     println!("  init     - Create dir structure and install units/scripts");
     println!("  enable   - Enable and start systemd .path units");
+    println!("  disable  - Disable and stop systemd .path units");
     println!("  status   - Show systemd status of watchers");
     println!("  ingest   - Move user-downloaded AppImages into staging");
     println!("  scan     - Run AppImage re-index manually");
