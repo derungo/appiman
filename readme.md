@@ -30,7 +30,7 @@ Automatic icon extraction
 
 Consistent renaming (removal of version/arch cruft)
 
-One binary (Rust), plus bundled scripts installed via appiman init
+One binary (Rust); helper scripts + systemd units installed via `appiman init` (embedded in the binary)
 
 Systemd-based auto-registration whenever a new AppImage appears
 
@@ -73,7 +73,7 @@ Appiman manages a fixed system directory tree:
 /usr/local/bin/            # Canonical symlinks for CLI access
 
 📂 Repository Layout
-assets/    # Systemd unit files + helper scripts installed via `appiman init`
+assets/    # Systemd unit files + helper scripts (embedded + installed via `appiman init`)
 src/       # Rust CLI implementation
 
 Key scripts and units
@@ -103,11 +103,12 @@ After that, any .AppImage downloaded by any user will be ingested and registered
 
 🏗️ Building from Source
 
-Requires Rust 1.75+.
+Requires Rust 2024 edition (Rust 1.85+).
 
 cargo build --release
 install -Dm755 target/release/appiman /usr/local/bin/appiman
 
+Note: `appiman init` installs the embedded helper scripts + systemd unit files, so copying just the `appiman` binary is sufficient (you do not need a separate `assets/` directory on disk).
 
 If you prefer to install system-wide without the AppImage bundle, this is the supported method.
 
@@ -123,6 +124,9 @@ Lint & tests:
 cargo clippy --all-targets
 cargo test
 
+Script integration tests (also run via `cargo test`):
+- `register-appimages.sh`: RAW_DIR, BIN_DIR, ICON_DIR, DESKTOP_DIR, SYMLINK_DIR
+- `move-appimages.sh`: RAW_DIR, HOME_ROOT
 
 Run locally:
 
