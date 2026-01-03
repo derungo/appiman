@@ -155,7 +155,7 @@ impl Mover {
     #[cfg(unix)]
     fn set_permissions(&self, path: &Path) -> Result<(), MoveError> {
         use std::fs::{metadata, set_permissions};
-        use std::os::unix::fs::{PermissionsExt, chown};
+        use std::os::unix::fs::{chown, PermissionsExt};
 
         let mut perms = metadata(path)?.permissions();
         perms.set_mode(0o755);
@@ -215,7 +215,6 @@ mod tests {
         fs::create_dir_all(&dest).unwrap();
 
         let app1 = source.join("Same.AppImage");
-        let app2 = source.join("Same.AppImage");
         create_appimage(&app1);
         create_appimage(&dest.join("Same.AppImage"));
 

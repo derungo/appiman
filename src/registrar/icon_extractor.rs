@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use thiserror::Error;
-use tracing::{debug, warn};
+use tracing::debug;
 
 #[derive(Debug, Error)]
 pub enum IconExtractError {

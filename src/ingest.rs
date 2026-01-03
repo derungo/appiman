@@ -57,8 +57,6 @@ pub fn run_ingest() -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn ingest_runs_scanner_and_mover() {
         // Integration test would require setting up test directories
