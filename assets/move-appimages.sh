@@ -1,14 +1,32 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-RAW_DIR="/opt/applications/raw"
+RAW_DIR="${RAW_DIR:-/opt/applications/raw}"
+HOME_ROOT="${HOME_ROOT:-/home}"
 
-# Find all user home directories under /home (excluding system users)
-USER_HOMES=$(find /home -mindepth 1 -maxdepth 1 -type d)
+mkdir -p "$RAW_DIR"
 
-for user_home in $USER_HOMES; do
-    if [ -d "$user_home" ]; then
-        find "$user_home" -type f -iname '*.AppImage' -exec mv -v {} "$RAW_DIR/" \;
-    fi
+# Avoid treating unmatched globs as literals.
+shopt -s nullglob
+
+for user_home in "$HOME_ROOT"/*; do
+    [[ -d "$user_home" ]] || continue
+
+    while IFS= read -r -d '' appimage; do
+        base=$(basename "$appimage")
+        stem="${base%.*}"
+        ext="${base##*.}"
+
+        dest="$RAW_DIR/$base"
+        if [[ -e "$dest" ]]; then
+            i=1
+            while [[ -e "$RAW_DIR/${stem}-$i.$ext" ]]; do
+                i=$((i + 1))
+            done
+            dest="$RAW_DIR/${stem}-$i.$ext"
+        fi
+
+        mv -v "$appimage" "$dest"
+    done < <(find "$user_home" -type f -iname '*.AppImage' -print0)
 
 done
 
