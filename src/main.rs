@@ -1,4 +1,5 @@
 mod clean;
+mod ingest;
 mod privileges;
 mod scan;
 mod setup;
@@ -20,6 +21,7 @@ fn main() -> ExitCode {
         Some("enable") => run_and_report(systemd::enable_all),
         Some("status") => run_and_report(systemd::print_status),
         Some("clean") => run_and_report(clean::run_cleanup),
+        Some("ingest") => run_and_report(ingest::run_ingest),
         Some("scan") => run_and_report(scan::run_scan),
         Some(other) => {
             eprintln!("❌ Unknown command: {}", other);
@@ -45,6 +47,7 @@ fn print_help() {
     println!("  init     - Create dir structure and install units/scripts");
     println!("  enable   - Enable and start systemd .path units");
     println!("  status   - Show systemd status of watchers");
+    println!("  ingest   - Move user-downloaded AppImages into staging");
     println!("  scan     - Run AppImage re-index manually");
     println!("  clean    - Remove legacy AppImages and artifacts");
     println!("  help     - Show this help message");
