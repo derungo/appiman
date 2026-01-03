@@ -20,6 +20,8 @@ provide simple CLI commands for initialization, enabling/disabling units, manual
 The current released version is 0.2.0.
 Work for 0.3.0 (major improvements to the registrar, icon handling, and watcher logic) is underway.
 
+See [ROADMAP.md](ROADMAP.md) for the full development plan and [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+
 🔧 Features
 
 System-wide ingestion of user-downloaded AppImages
