@@ -8,22 +8,25 @@ Appiman is a compact Rust utility for system-wide AppImage lifecycle management 
 - **Automatic .desktop entry** generation
 - **Automatic icon extraction**
 - **Consistent renaming** (removal of version/architecture cruft)
-- **Single binary** (Rust) with embedded helper scripts and systemd units
+- **Single binary** (Rust) with embedded systemd units
 - **Systemd-based auto-registration** whenever a new AppImage appears
 - **Manual scan and clean** commands for maintenance
 - **Multi-user safe** — no touching user configs or non-AppImage files
 - **AppImage distribution** for easy self-contained installation
+- **Configuration system** with TOML config file support and environment variable overrides
+- **Structured logging** with configurable levels and JSON/pretty output formats
 
 ## How It Works
 
-Appiman ships with opinionated helper scripts and systemd units that:
+Appiman ships with systemd units and configurable settings that:
 
-1. **Sweep users' home directories** for newly downloaded `.AppImage` files
-2. **Ingest them** into a shared `/opt/applications/raw` staging area
-3. **Register each AppImage** as a normalized executable under `/opt/applications/bin`
-4. **Extract icons**, create `.desktop` files, and maintain `/usr/local/bin` symlinks
-5. **Automatically react** to new downloads through systemd `.path` watchers
-6. **Provide simple CLI** commands for initialization, enabling/disabling units, manual rescans, and cleanup
+1. **Load configuration** from `/etc/appiman/config.toml` or environment variables
+2. **Sweep users' home directories** for newly downloaded `.AppImage` files
+3. **Ingest them** into a shared `/opt/applications/raw` staging area
+4. **Register each AppImage** as a normalized executable under `/opt/applications/bin`
+5. **Extract icons**, create `.desktop` files, and maintain `/usr/local/bin` symlinks
+6. **Automatically react** to new downloads through systemd `.path` watchers
+7. **Provide simple CLI** commands for initialization, enabling/disabling units, manual rescans, and cleanup
 
 ## Installation
 
@@ -54,6 +57,41 @@ install -Dm755 target/release/appiman /usr/local/bin/appiman
 ```
 
 **Note:** `appiman init` installs the embedded helper scripts + systemd unit files, so copying just the `appiman` binary is sufficient (you do not need a separate `assets/` directory on disk).
+
+## Configuration
+
+Appiman can be configured via:
+
+### Configuration File
+
+Create `/etc/appiman/config.toml` with the following structure:
+
+```toml
+[directories]
+raw = "/opt/applications/raw"
+bin = "/opt/applications/bin"
+icons = "/opt/applications/icons"
+desktop = "/usr/share/applications"
+symlink = "/usr/local/bin"
+home_root = "/home"
+
+[logging]
+level = "info"
+json_output = false
+```
+
+### Environment Variables
+
+All configuration values can be overridden with environment variables:
+
+- `APPIMAN_CONFIG` - Path to config file (default: `/etc/appiman/config.toml`)
+- `APPIMAN_RAW_DIR` - Staging directory for AppImages
+- `APPIMAN_BIN_DIR` - Processed AppImages directory
+- `APPIMAN_ICON_DIR` - Icon storage directory
+- `APPIMAN_DESKTOP_DIR` - Desktop entries directory
+- `APPIMAN_SYMLINK_DIR` - Symlink directory
+- `APPIMAN_HOME_ROOT` - User home directories root
+- `RUST_LOG` - Logging level (trace, debug, info, warn, error)
 
 ## Directory Layout
 

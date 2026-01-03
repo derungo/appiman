@@ -18,16 +18,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `src/core/appimage.rs` - AppImage struct with validation
   - `src/core/metadata.rs` - Metadata extraction and JSON serialization
   - `src/core/normalization.rs` - Name normalization with regex
+- Configuration system with TOML support
+  - `src/config.rs` - Load config from /etc/appiman/config.toml
+  - Environment variable overrides for all paths
+  - Structured logging configuration
+- Structured logging with tracing
+  - `src/logger.rs` - JSON and pretty output formats
+  - Configurable log levels (trace, debug, info, warn, error)
+- Mover module (`src/mover/`):
+  - Scanner for finding AppImages in user home directories
+  - Mover for handling file operations with collision resolution
+  - Conflict resolution with automatic numbering
+- Registrar module (`src/registrar/`):
+  - Processor for AppImage registration pipeline
+  - Icon extractor supporting PNG/SVG formats
+  - Desktop entry generation following freedesktop.org spec
+  - Symlink management for /usr/local/bin
+- Shell script analysis document (docs/shell-script-analysis.md)
 - New dependencies: thiserror, tracing, serde, toml, walkdir, chrono, lazy_static
-- Comprehensive unit tests for core modules (29 tests passing)
+- Comprehensive unit tests for core modules (47 tests passing)
 
 ### Changed
 - Updated Cargo.toml with new dependencies
-- Enhanced module structure with core/ directory
+- Enhanced module structure with core/, mover/, registrar/ directories
+- Refactored ingest, scan, clean, sync to use Rust modules instead of shell scripts
+- Eliminated shell script execution from main CLI commands
+- Updated README with configuration system documentation
 
 ### Technical Debt
-- Shell scripts still in use (migration in progress per ADR-001)
-- Logging still uses println!/eprintln! (tracing integration planned)
+- Shell scripts still available as fallback but no longer used by default
 
 ---
 
