@@ -4,7 +4,7 @@ version = "0.2.0"
 edition = "2024"
 
 [dependencies]
-which = "5"
+which = "8"
 tempfile = "3"
 dirs = "5"
 regex = "1"
