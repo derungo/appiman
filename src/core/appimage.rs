@@ -99,7 +99,7 @@ impl AppImage {
 mod tests {
     use super::*;
     use std::fs;
-    use tempfile::{NamedTempFile, TempDir};
+    use tempfile::TempDir;
 
     #[test]
     fn appimage_new_rejects_nonexistent_path() {

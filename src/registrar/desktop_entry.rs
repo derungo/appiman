@@ -1,5 +1,3 @@
-use std::path::Path;
-
 #[derive(Debug, Clone)]
 pub struct DesktopEntry {
     pub name: String,

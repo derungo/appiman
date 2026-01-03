@@ -15,8 +15,6 @@ pub fn run_sync() -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn sync_runs_ingest_before_scan() {
         // This is an integration test that would require:

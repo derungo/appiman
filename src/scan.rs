@@ -72,8 +72,6 @@ pub fn run_scan() -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn scan_runs_processor() {
         // Integration test would require setting up test directories
