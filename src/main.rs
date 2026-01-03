@@ -1,6 +1,7 @@
 mod clean;
 mod core;
 mod ingest;
+mod mover;
 mod privileges;
 mod scan;
 mod setup;
