@@ -1,6 +1,9 @@
 mod clean;
+mod config;
 mod core;
 mod ingest;
+mod log;
+mod logger;
 mod mover;
 mod privileges;
 mod registrar;

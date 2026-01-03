@@ -2,10 +2,7 @@
 
 use std::process::Command;
 
-const UNITS: &[&str] = &[
-    "register-appimages.service",
-    "move-appimages.service",
-];
+const UNITS: &[&str] = &["register-appimages.service", "move-appimages.service"];
 
 pub fn tail_logs() {
     for unit in UNITS {

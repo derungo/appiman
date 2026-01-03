@@ -1,31 +1,23 @@
 // src/ingest.rs
 
+use crate::config::Config;
 use crate::mover::{Mover, Scanner};
 use crate::privileges::require_root;
 use std::io;
-use std::path::PathBuf;
-
-const DEFAULT_RAW_DIR: &str = "/opt/applications/raw";
-const DEFAULT_HOME_ROOT: &str = "/home";
-
-fn raw_dir() -> PathBuf {
-    std::env::var_os("APPIMAN_RAW_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(DEFAULT_RAW_DIR))
-}
-
-fn home_root() -> PathBuf {
-    std::env::var_os("APPIMAN_HOME_ROOT")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(DEFAULT_HOME_ROOT))
-}
 
 pub fn run_ingest() -> io::Result<()> {
     require_root()?;
 
+    let config = Config::load().map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("Failed to load config: {}", e),
+        )
+    })?;
+
     println!("📥 Ingesting user-downloaded AppImages...");
 
-    let scanner = Scanner::new(home_root());
+    let scanner = Scanner::new(config.home_root());
     let appimages = scanner.find_appimages().map_err(|e| {
         io::Error::new(
             io::ErrorKind::Other,
@@ -38,7 +30,7 @@ pub fn run_ingest() -> io::Result<()> {
         return Ok(());
     }
 
-    let mover = Mover::new(home_root(), raw_dir());
+    let mover = Mover::new(config.home_root(), config.raw_dir());
     let report = mover.move_appimages(&appimages).map_err(|e| {
         io::Error::new(
             io::ErrorKind::Other,
