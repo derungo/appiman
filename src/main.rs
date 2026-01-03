@@ -3,6 +3,7 @@ mod core;
 mod ingest;
 mod mover;
 mod privileges;
+mod registrar;
 mod scan;
 mod setup;
 mod sync;

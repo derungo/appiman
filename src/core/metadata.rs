@@ -73,6 +73,10 @@ impl Metadata {
     pub fn set_icon_path(&mut self, path: String) {
         self.icon_path = Some(path);
     }
+
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
 }
 
 #[cfg(test)]
