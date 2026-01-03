@@ -1,145 +1,161 @@
-appiman
+# Appiman
 
-Appiman is a compact Rust utility for system-wide AppImage lifecycle management on multi-user Linux workstations.
-It centralizes discovery, registration, updates, and cleanup of AppImages—without requiring AppImageLauncher, manual .desktop file creation, or scattered downloads in $HOME.
+Appiman is a compact Rust utility for system-wide AppImage lifecycle management on multi-user Linux workstations. It centralizes discovery, registration, updates, and cleanup of AppImages—without requiring AppImageLauncher, manual .desktop file creation, or scattered downloads in `$HOME`.
+
+## Features
+
+- **System-wide ingestion** of user-downloaded AppImages
+- **Automatic .desktop entry** generation
+- **Automatic icon extraction**
+- **Consistent renaming** (removal of version/architecture cruft)
+- **Single binary** (Rust) with embedded helper scripts and systemd units
+- **Systemd-based auto-registration** whenever a new AppImage appears
+- **Manual scan and clean** commands for maintenance
+- **Multi-user safe** — no touching user configs or non-AppImage files
+- **AppImage distribution** for easy self-contained installation
+
+## How It Works
 
 Appiman ships with opinionated helper scripts and systemd units that:
 
-sweep users' home directories for newly downloaded .AppImage files
+1. **Sweep users' home directories** for newly downloaded `.AppImage` files
+2. **Ingest them** into a shared `/opt/applications/raw` staging area
+3. **Register each AppImage** as a normalized executable under `/opt/applications/bin`
+4. **Extract icons**, create `.desktop` files, and maintain `/usr/local/bin` symlinks
+5. **Automatically react** to new downloads through systemd `.path` watchers
+6. **Provide simple CLI** commands for initialization, enabling/disabling units, manual rescans, and cleanup
 
-ingest them into a shared /opt/applications/raw staging area
+## Installation
 
-register each AppImage as a normalized executable under /opt/applications/bin
-
-extract icons, create .desktop files, and maintain /usr/local/bin symlinks
-
-automatically react to new downloads through systemd .path watchers
-
-provide simple CLI commands for initialization, enabling/disabling units, manual rescans, and cleanup
-
-The current released version is 0.2.0.
-Work for 0.3.0 (major improvements to the registrar, icon handling, and watcher logic) is underway.
-
-See [ROADMAP.md](ROADMAP.md) for the full development plan and [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
-
-🔧 Features
-
-System-wide ingestion of user-downloaded AppImages
-
-Automatic .desktop entry generation
-
-Automatic icon extraction
-
-Consistent renaming (removal of version/arch cruft)
-
-One binary (Rust); helper scripts + systemd units installed via `appiman init` (embedded in the binary)
-
-Systemd-based auto-registration whenever a new AppImage appears
-
-Manual scan and clean commands for maintenance
-
-Safe for multi-user machines — no touching user configs or non-AppImage files
-
-Ships as an AppImage for easy self-contained installation
-
-📦 Preferred Installation: AppImage
+### Preferred: AppImage
 
 The recommended and simplest installation method is the prebuilt AppImage release.
 
-Download the latest AppImage from Releases:
-
+```bash
+# Download the latest AppImage from Releases
 chmod +x appiman-*.AppImage
 sudo ./appiman-*.AppImage init
 sudo ./appiman-*.AppImage enable
+```
 
+**Using the AppImage bundle ensures:**
+- No Rust toolchain needed
+- No local installation clutter
+- Always portable and self-contained
+- Perfectly mirrors the environment appiman manages for other AppImages
 
-Using the AppImage bundle ensures:
+### Building from Source
 
-No Rust toolchain needed
+Requires Rust 2024 edition (Rust 1.85+).
 
-No local installation clutter
+```bash
+cargo build --release
+install -Dm755 target/release/appiman /usr/local/bin/appiman
+```
 
-Always portable and self-contained
+**Note:** `appiman init` installs the embedded helper scripts + systemd unit files, so copying just the `appiman` binary is sufficient (you do not need a separate `assets/` directory on disk).
 
-Perfectly mirrors the environment appiman manages for other AppImages
-
-📁 Directory Layout
+## Directory Layout
 
 Appiman manages a fixed system directory tree:
 
+```
 /opt/applications/
     raw/    # Staging area for newly discovered AppImages
     bin/    # Normalized AppImages ready to run
     icons/  # Extracted icons in PNG/SVG form
 /usr/share/applications/   # Desktop entries created automatically
 /usr/local/bin/            # Canonical symlinks for CLI access
+```
 
-📂 Repository Layout
-assets/    # Systemd unit files + helper scripts (embedded + installed via `appiman init`)
-src/       # Rust CLI implementation
+## Usage
 
-Key scripts and units
-File	Purpose
-assets/move-appimages.sh	Recursively finds user-owned AppImages and moves them into /opt/applications/raw.
-assets/register-appimages.sh	Normalizes names, installs AppImages under bin/, extracts icons, creates .desktop entries, and cleans stale symlinks/icons.
-assets/*.service	Systemd services that execute the scripts.
-assets/*.path	Systemd path watchers that monitor raw/ and react instantly to new files.
-🚀 Commands
-appiman <command>
+### Commands
 
-Command	Description
-init	Creates /opt/applications/*, installs helper scripts and systemd units. Requires root.
-enable	Enables and starts the watcher service + path units. Requires root.
-disable	Disables and stops watcher path units. Requires root.
-status	Shows the health of all watcher paths and services.
-ingest	Moves user-downloaded AppImages into /opt/applications/raw. Requires root.
-scan	Manually re-runs the registrar to process all AppImages. Requires root.
-sync	Runs ingest + scan (full manual ingestion + registration). Requires root.
-clean	Removes stale entries, versioned duplicates, and legacy artifacts. Requires root.
-help	Prints built-in help.
+| Command | Description |
+|---------|-------------|
+| `init` | Creates `/opt/applications/*`, installs helper scripts and systemd units. Requires root. |
+| `enable` | Enables and starts the watcher service + path units. Requires root. |
+| `disable` | Disables and stops watcher path units. Requires root. |
+| `status` | Shows the health of all watcher paths and services. |
+| `ingest` | Moves user-downloaded AppImages into `/opt/applications/raw`. Requires root. |
+| `scan` | Manually re-runs the registrar to process all AppImages. Requires root. |
+| `sync` | Runs ingest + scan (full manual ingestion + registration). Requires root. |
+| `clean` | Removes stale entries, versioned duplicates, and legacy artifacts. Requires root. |
+| `help` | Prints built-in help. |
 
-Typical first-time setup:
+### Typical First-Time Setup
 
+```bash
 sudo appiman init
 sudo appiman enable
+```
 
-After that, any .AppImage downloaded by any user will be ingested and registered automatically.
+After that, any `.AppImage` downloaded by any user will be ingested and registered automatically.
 
-Manual one-shot processing (without watchers):
+### Manual One-Shot Processing
 
+To process AppImages without enabling the watchers:
+
+```bash
 sudo appiman sync
+```
 
-🏗️ Building from Source
+## Repository Layout
 
-Requires Rust 2024 edition (Rust 1.85+).
+```
+assets/    # Systemd unit files + helper scripts (embedded + installed via `appiman init`)
+src/       # Rust CLI implementation
+docs/       # Documentation and architecture decisions
+tests/      # Integration tests for shell scripts
+```
 
-cargo build --release
-install -Dm755 target/release/appiman /usr/local/bin/appiman
+### Key Scripts and Units
 
-Note: `appiman init` installs the embedded helper scripts + systemd unit files, so copying just the `appiman` binary is sufficient (you do not need a separate `assets/` directory on disk).
+| File | Purpose |
+|------|---------|
+| `assets/move-appimages.sh` | Recursively finds user-owned AppImages and moves them into `/opt/applications/raw` |
+| `assets/register-appimages.sh` | Normalizes names, installs AppImages under `bin/`, extracts icons, creates `.desktop` entries, and cleans stale symlinks/icons |
+| `assets/*.service` | Systemd services that execute the scripts |
+| `assets/*.path` | Systemd path watchers that monitor `raw/` and react instantly to new files |
 
-If you prefer to install system-wide without the AppImage bundle, this is the supported method.
+## Development
 
-🧰 Development Workflow
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development guidelines.
 
-Format:
+### Format
 
+```bash
 cargo fmt
+```
 
+### Lint & Tests
 
-Lint & tests:
-
+```bash
 cargo clippy --all-targets
 cargo test
+```
 
-Script integration tests (also run via `cargo test`):
-- `register-appimages.sh`: RAW_DIR, BIN_DIR, ICON_DIR, DESKTOP_DIR, SYMLINK_DIR
-- `move-appimages.sh`: RAW_DIR, HOME_ROOT
+### Script Integration Tests
 
-Run locally:
+Also run via `cargo test`:
+- `register-appimages.sh`: `RAW_DIR`, `BIN_DIR`, `ICON_DIR`, `DESKTOP_DIR`, `SYMLINK_DIR`
+- `move-appimages.sh`: `RAW_DIR`, `HOME_ROOT`
 
+### Run Locally
+
+```bash
 cargo run -- <command>
+```
 
-📝 License
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for the full development plan from v0.3.0 to v1.0 and beyond.
+
+Current version: 0.2.0
+
+Work for 0.3.0 (major improvements to the registrar, icon handling, and watcher logic) is underway.
+
+## License
 
 MIT
