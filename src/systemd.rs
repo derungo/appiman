@@ -58,10 +58,10 @@ fn disable_units(systemctl: &str, units: &[&str]) -> io::Result<()> {
     }
 
     if !failures.is_empty() {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            format!("Failed to disable/stop: {}", failures.join(", ")),
-        ));
+        return Err(io::Error::other(format!(
+            "Failed to disable/stop: {}",
+            failures.join(", ")
+        )));
     }
 
     Ok(())
