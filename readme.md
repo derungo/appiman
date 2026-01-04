@@ -129,11 +129,21 @@ sudo appiman init
 sudo appiman enable
 ```
 
-After that, any `.AppImage` downloaded by any user will be ingested and registered automatically.
+After this, any `.AppImage` downloaded by any user will be automatically ingested and registered. You should immediately find them in your application launcher (menu, search, etc.).
 
-### Manual One-Shot Processing
+### Initial Ingestion (if you have existing AppImages)
 
-To process AppImages without enabling the watchers:
+If you have AppImages already downloaded before installing appiman, you'll need to trigger a manual ingestion once:
+
+```bash
+sudo appiman sync    # One-time ingestion of existing AppImages
+```
+
+After this first manual sync, the systemd watchers will handle all future downloads automatically.
+
+### Manual Processing
+
+To process AppImages without enabling the watchers (e.g., for testing or if watchers fail):
 
 ```bash
 sudo appiman sync
