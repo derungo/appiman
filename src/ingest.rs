@@ -9,8 +9,7 @@ pub fn run_ingest() -> io::Result<()> {
     require_root()?;
 
     let config = Config::load().map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
+        io::Error::other(
             format!("Failed to load config: {}", e),
         )
     })?;
@@ -19,8 +18,7 @@ pub fn run_ingest() -> io::Result<()> {
 
     let scanner = Scanner::new(config.home_root());
     let appimages = scanner.find_appimages().map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
+        io::Error::other(
             format!("Failed to scan for AppImages: {}", e),
         )
     })?;
@@ -32,8 +30,7 @@ pub fn run_ingest() -> io::Result<()> {
 
     let mover = Mover::new(config.home_root(), config.raw_dir());
     let report = mover.move_appimages(&appimages).map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
+        io::Error::other(
             format!("Failed to move AppImages: {}", e),
         )
     })?;

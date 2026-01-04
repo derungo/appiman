@@ -11,10 +11,14 @@ Appiman is a compact Rust utility for system-wide AppImage lifecycle management 
 - **Single binary** (Rust) with embedded systemd units
 - **Systemd-based auto-registration** whenever a new AppImage appears
 - **Manual scan and clean** commands for maintenance
+- **AppImage update checking and application** with rollback capability
 - **Multi-user safe** — no touching user configs or non-AppImage files
 - **AppImage distribution** for easy self-contained installation
 - **Configuration system** with TOML config file support and environment variable overrides
 - **Structured logging** with configurable levels and JSON/pretty output formats
+- **Performance optimizations** including parallel processing, metadata caching, and incremental scanning
+- **Thread-safe operations** with configurable thread pool sizes
+- **Performance metrics** and benchmarking in status reports
 
 ## How It Works
 
@@ -75,10 +79,16 @@ desktop = "/usr/share/applications"
 symlink = "/usr/local/bin"
 home_root = "/home"
 
-[logging]
-level = "info"
-json_output = false
-```
+ [logging]
+ level = "info"
+ json_output = false
+
+ [security]
+ verify_signatures = false  # Enable GPG signature verification
+ require_signatures = false # Require signatures for registration
+ warn_unsigned = true       # Warn about unsigned AppImages
+ detect_sandboxing = true   # Detect sandboxing usage
+ ```
 
 ### Environment Variables
 
@@ -89,9 +99,132 @@ All configuration values can be overridden with environment variables:
 - `APPIMAN_BIN_DIR` - Processed AppImages directory
 - `APPIMAN_ICON_DIR` - Icon storage directory
 - `APPIMAN_DESKTOP_DIR` - Desktop entries directory
-- `APPIMAN_SYMLINK_DIR` - Symlink directory
-- `APPIMAN_HOME_ROOT` - User home directories root
-- `RUST_LOG` - Logging level (trace, debug, info, warn, error)
+ - `APPIMAN_SYMLINK_DIR` - Symlink directory
+ - `APPIMAN_HOME_ROOT` - User home directories root
+ - `RUST_LOG` - Logging level (trace, debug, info, warn, error)
+
+## Security Features
+
+Appiman includes comprehensive security checks for AppImage integrity and authenticity:
+
+### Security Checks
+
+- **SHA256 Integrity Verification**: Every AppImage is verified using SHA256 checksums to ensure file integrity
+- **GPG Signature Verification**: Optional verification of detached GPG signatures (.sig files)
+- **Sandboxing Detection**: Detects if AppImages use security sandboxing (firejail, bubblewrap)
+- **Security Status Reporting**: Security status is displayed in `appiman status` output
+
+### Security Configuration
+
+Security features can be configured in `/etc/appiman/config.toml`:
+
+```toml
+[security]
+verify_signatures = false  # Enable GPG signature verification (requires gpg command)
+require_signatures = false # Require signatures for AppImage registration
+warn_unsigned = true       # Warn about unsigned AppImages during processing
+detect_sandboxing = true   # Detect and report sandboxing usage
+```
+
+### Security Recommendations
+
+For enhanced security:
+
+1. **Enable signature verification** if you have trusted GPG keys for AppImage publishers
+2. **Enable sandboxing warnings** to be notified when AppImages lack security isolation
+3. **Use signed AppImages** from trusted sources whenever possible
+4. **Regularly check security status** with `appiman status` or `appiman status --json`
+
+### Security Status Indicators
+
+The `appiman status` command shows security status for each AppImage:
+- ✅ **Secure**: AppImage passes all enabled security checks
+- ⚠️ **Warning**: AppImage has security issues (unsigned, no sandboxing, etc.)
+- ❌ **Error**: AppImage fails critical security checks (checksum mismatch, invalid signature)
+
+Appiman provides helpful warnings during processing but does not block functionality by default, allowing you to use AppImages while being aware of security considerations.
+
+## Performance Optimizations
+
+Appiman includes several performance optimizations for efficient processing of large AppImage collections:
+
+### Performance Features
+
+- **Parallel Processing**: Process multiple AppImages concurrently using configurable thread pools
+- **Metadata Caching**: Cache AppImage metadata to avoid re-extraction of unchanged files
+- **Incremental Scanning**: Only process AppImages modified since the last scan
+- **Thread Safety**: All operations are thread-safe for concurrent execution
+- **Performance Metrics**: Track processing times, cache hits, and worker utilization
+
+### Performance Configuration
+
+Performance settings can be configured in `/etc/appiman/config.toml`:
+
+```toml
+[performance]
+parallel_processing_enabled = true    # Enable parallel AppImage processing
+thread_pool_size = 4                 # Number of parallel worker threads (default: CPU cores)
+metadata_cache_enabled = true        # Cache metadata to speed up re-scans
+incremental_scan_enabled = true      # Skip unchanged AppImages during scans
+performance_metrics_enabled = true   # Collect and display performance metrics
+```
+
+### Performance Metrics
+
+The `appiman status` command displays performance metrics when available:
+
+- **Last scan duration**: Time taken for the most recent scan operation
+- **Cache hits**: Number of AppImages processed from cache instead of full extraction
+- **Parallel workers**: Number of threads used for parallel processing
+- **Total processed**: Total number of AppImages processed in the last scan
+
+### Performance Recommendations
+
+For optimal performance:
+
+1. **Enable parallel processing** for collections with many AppImages
+2. **Keep metadata caching enabled** to speed up repeated scans
+3. **Use incremental scanning** for frequent scan operations
+4. **Monitor performance metrics** with `appiman status` to tune thread pool sizes
+5. **Adjust thread pool size** based on system resources and AppImage processing load
+
+## AppImage Updates
+
+Appiman provides built-in update management for registered AppImages:
+
+### Update Commands
+
+| Command | Description |
+|---------|-------------|
+| `appiman update` | Check all registered AppImages for available updates |
+| `appiman update --apply` | Check for and apply all available updates |
+| `appiman update --dry-run --apply` | Show what updates would be applied without making changes |
+| `appiman update --rollback=<name>` | Rollback a specific AppImage to its previous version |
+
+### Update Configuration
+
+Update behavior can be configured in `/etc/appiman/config.toml`:
+
+```toml
+[updates]
+auto_update_enabled = false  # Whether to enable automatic updates (future feature)
+backup_enabled = true        # Create backups before updating
+max_backups = 3              # Maximum number of backup versions to keep
+```
+
+### Update Process
+
+1. **Check**: Uses `--appimage-updateinfo` to query update servers
+2. **Backup**: Creates timestamped backups in `bin/backups/` before updating
+3. **Apply**: Runs `--appimage-update` to download and apply updates
+4. **Rollback**: Can restore from backup if update fails or causes issues
+
+### Safety Features
+
+- **Automatic backups** before each update
+- **Rollback capability** to previous working versions
+- **Dry-run mode** to preview changes
+- **Version tracking** and logging of all update operations
 
 ## Directory Layout
 
@@ -119,6 +252,7 @@ Appiman manages a fixed system directory tree:
 | `ingest` | Moves user-downloaded AppImages into `/opt/applications/raw`. Requires root. |
 | `scan` | Manually re-runs the registrar to process all AppImages. Requires root. |
 | `sync` | Runs ingest + scan (full manual ingestion + registration). Requires root. |
+| `update` | Checks for and applies AppImage updates with rollback capability. Requires root. |
 | `clean` | Removes stale entries, versioned duplicates, and legacy artifacts. Requires root. |
 | `help` | Prints built-in help. |
 

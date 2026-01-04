@@ -50,6 +50,81 @@ pub struct Logging {
     pub json_output: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Security {
+    #[serde(default = "default_verify_signatures")]
+    pub verify_signatures: bool,
+
+    #[serde(default = "default_require_signatures")]
+    pub require_signatures: bool,
+
+    #[serde(default = "default_warn_unsigned")]
+    pub warn_unsigned: bool,
+
+    #[serde(default = "default_detect_sandboxing")]
+    pub detect_sandboxing: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Updates {
+    #[serde(default = "default_auto_update_enabled")]
+    pub auto_update_enabled: bool,
+
+    #[serde(default = "default_backup_enabled")]
+    pub backup_enabled: bool,
+
+    #[serde(default = "default_max_backups")]
+    pub max_backups: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct Versions {
+    #[serde(default = "default_max_versions_per_app")]
+    pub max_versions_per_app: usize,
+
+    #[serde(default = "default_auto_cleanup_enabled")]
+    pub auto_cleanup_enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct Performance {
+    #[serde(default = "default_parallel_processing_enabled")]
+    pub parallel_processing_enabled: bool,
+
+    #[serde(default = "default_thread_pool_size")]
+    pub thread_pool_size: usize,
+
+    #[serde(default = "default_metadata_cache_enabled")]
+    pub metadata_cache_enabled: bool,
+
+    #[serde(default = "default_incremental_scan_enabled")]
+    pub incremental_scan_enabled: bool,
+
+    #[serde(default = "default_performance_metrics_enabled")]
+    pub performance_metrics_enabled: bool,
+}
+
+impl Default for Security {
+    fn default() -> Self {
+        Security {
+            verify_signatures: default_verify_signatures(),
+            require_signatures: default_require_signatures(),
+            warn_unsigned: default_warn_unsigned(),
+            detect_sandboxing: default_detect_sandboxing(),
+        }
+    }
+}
+
+impl Default for Updates {
+    fn default() -> Self {
+        Updates {
+            auto_update_enabled: default_auto_update_enabled(),
+            backup_enabled: default_backup_enabled(),
+            max_backups: default_max_backups(),
+        }
+    }
+}
+
 impl Default for Logging {
     fn default() -> Self {
         Logging {
@@ -59,22 +134,25 @@ impl Default for Logging {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
     pub directories: Directories,
 
     #[serde(default)]
     pub logging: Logging,
-}
 
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            directories: Directories::default(),
-            logging: Logging::default(),
-        }
-    }
+    #[serde(default)]
+    pub updates: Updates,
+
+    #[serde(default)]
+    pub versions: Versions,
+
+    #[serde(default)]
+    pub security: Security,
+
+    #[serde(default)]
+    pub performance: Performance,
 }
 
 impl Config {
@@ -184,6 +262,62 @@ fn default_log_level() -> String {
     "info".to_string()
 }
 
+fn default_auto_update_enabled() -> bool {
+    false
+}
+
+fn default_backup_enabled() -> bool {
+    true
+}
+
+fn default_max_backups() -> usize {
+    3
+}
+
+fn default_max_versions_per_app() -> usize {
+    5
+}
+
+fn default_auto_cleanup_enabled() -> bool {
+    true
+}
+
+fn default_verify_signatures() -> bool {
+    false
+}
+
+fn default_require_signatures() -> bool {
+    false
+}
+
+fn default_warn_unsigned() -> bool {
+    true
+}
+
+fn default_detect_sandboxing() -> bool {
+    true
+}
+
+fn default_parallel_processing_enabled() -> bool {
+    true
+}
+
+fn default_thread_pool_size() -> usize {
+    num_cpus::get()
+}
+
+fn default_metadata_cache_enabled() -> bool {
+    true
+}
+
+fn default_incremental_scan_enabled() -> bool {
+    true
+}
+
+fn default_performance_metrics_enabled() -> bool {
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -208,7 +342,7 @@ mod tests {
         assert_eq!(config.directories.symlink, "/usr/local/bin");
         assert_eq!(config.directories.home_root, "/home");
         assert_eq!(config.logging.level, "info");
-        assert_eq!(config.logging.json_output, false);
+        assert!(!config.logging.json_output);
 
         unsafe {
             std::env::remove_var("APPIMAN_CONFIG");
@@ -251,7 +385,7 @@ json_output = true
         assert_eq!(config.directories.raw, "/custom/raw");
         assert_eq!(config.directories.bin, "/custom/bin");
         assert_eq!(config.logging.level, "debug");
-        assert_eq!(config.logging.json_output, true);
+        assert!(config.logging.json_output);
 
         unsafe {
             std::env::remove_var("APPIMAN_CONFIG");

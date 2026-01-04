@@ -59,13 +59,11 @@ fn find_icon_in_dir(dir: &Path) -> Result<Option<PathBuf>, IconExtractError> {
         let entry = entry?;
         let path = entry.path();
 
-        if path.is_file() {
-            if let Some(ext) = path.extension() {
-                if ext.eq_ignore_ascii_case("png") || ext.eq_ignore_ascii_case("svg") {
+        if path.is_file()
+            && let Some(ext) = path.extension()
+                && (ext.eq_ignore_ascii_case("png") || ext.eq_ignore_ascii_case("svg")) {
                     return Ok(Some(path));
                 }
-            }
-        }
     }
 
     Ok(None)

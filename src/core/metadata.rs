@@ -16,6 +16,25 @@ pub enum MetadataError {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct VersionInfo {
+    pub version: String,
+    pub checksum: String,
+    pub installed_at: DateTime<Utc>,
+    pub is_active: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AppMetadata {
+    pub name: String,
+    pub display_name: String,
+    pub categories: Vec<String>,
+    pub icon_path: Option<String>,
+    pub versions: Vec<VersionInfo>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Metadata {
     pub name: String,
     pub version: Option<String>,
@@ -42,16 +61,16 @@ impl Metadata {
         let mut metadata = Metadata::new("Unknown".to_string(), String::new());
 
         for line in content.lines() {
-            if line.starts_with("Name=") {
-                metadata.name = line[5..].trim().to_string();
-            } else if line.starts_with("Categories=") {
-                metadata.categories = line[11..]
+            if let Some(stripped) = line.strip_prefix("Name=") {
+                metadata.name = stripped.trim().to_string();
+            } else if let Some(stripped) = line.strip_prefix("Categories=") {
+                metadata.categories = stripped
                     .split(';')
                     .filter(|s| !s.is_empty())
                     .map(|s| s.trim().to_string())
                     .collect();
-            } else if line.starts_with("Icon=") {
-                metadata.icon_path = Some(line[5..].trim().to_string());
+            } else if let Some(stripped) = line.strip_prefix("Icon=") {
+                metadata.icon_path = Some(stripped.trim().to_string());
             }
         }
 
@@ -76,6 +95,81 @@ impl Metadata {
 
     pub fn set_name(&mut self, name: String) {
         self.name = name;
+    }
+}
+
+impl AppMetadata {
+    pub fn new(display_name: String, normalized_name: String) -> Self {
+        AppMetadata {
+            name: normalized_name,
+            display_name,
+            categories: vec!["Utility".to_string()],
+            icon_path: None,
+            versions: Vec::new(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        }
+    }
+
+    pub fn add_version(&mut self, version: String, checksum: String) -> &mut VersionInfo {
+        // Deactivate all other versions
+        for v in &mut self.versions {
+            v.is_active = false;
+        }
+
+        let version_info = VersionInfo {
+            version: version.clone(),
+            checksum,
+            installed_at: Utc::now(),
+            is_active: true,
+        };
+
+        self.versions.push(version_info);
+        self.updated_at = Utc::now();
+
+        self.versions.last_mut().unwrap()
+    }
+
+    pub fn get_active_version(&self) -> Option<&VersionInfo> {
+        self.versions.iter().find(|v| v.is_active)
+    }
+
+    pub fn set_active_version(&mut self, version: &str) -> bool {
+        let mut found = false;
+        for v in &mut self.versions {
+            if v.version == version {
+                v.is_active = true;
+                found = true;
+            } else {
+                v.is_active = false;
+            }
+        }
+        if found {
+            self.updated_at = Utc::now();
+        }
+        found
+    }
+
+    pub fn get_version(&self, version: &str) -> Option<&VersionInfo> {
+        self.versions.iter().find(|v| v.version == version)
+    }
+
+    pub fn remove_version(&mut self, version: &str) -> bool {
+        if let Some(pos) = self.versions.iter().position(|v| v.version == version) {
+            self.versions.remove(pos);
+            self.updated_at = Utc::now();
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn to_json(&self) -> Result<String, MetadataError> {
+        Ok(serde_json::to_string_pretty(self)?)
+    }
+
+    pub fn from_json(s: &str) -> Result<Self, MetadataError> {
+        Ok(serde_json::from_str(s)?)
     }
 }
 

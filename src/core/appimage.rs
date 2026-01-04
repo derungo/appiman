@@ -21,12 +21,10 @@ pub enum AppImageError {
 
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
-
-    #[error("Metadata not found")]
-    MetadataNotFound,
 }
 
 #[derive(Debug, Error)]
+#[allow(dead_code)]
 pub enum ExtractError {
     #[error("Extraction failed: {0}")]
     ExtractionFailed(String),
@@ -52,7 +50,7 @@ impl AppImage {
 
         if !path
             .extension()
-            .map_or(false, |ext| ext.eq_ignore_ascii_case("AppImage"))
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("AppImage"))
         {
             return Err(AppImageError::InvalidFormat(format!(
                 "Invalid extension: {:?}",

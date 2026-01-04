@@ -1,4 +1,6 @@
 use crate::config::Config;
+use crate::core::{AppImage, VersionManager};
+use crate::security::SecurityChecker;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
@@ -23,7 +25,7 @@ pub enum StatusError {
 
 impl From<StatusError> for std::io::Error {
     fn from(err: StatusError) -> Self {
-        std::io::Error::new(std::io::ErrorKind::Other, err.to_string())
+        std::io::Error::other(err.to_string())
     }
 }
 
@@ -34,6 +36,15 @@ pub struct AppImageStatus {
     pub path: String,
     pub size_bytes: u64,
     pub registered_at: Option<String>,
+    pub security_status: Option<SecurityStatus>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PerformanceMetrics {
+    pub last_scan_duration: Option<f64>,
+    pub cached_hits: Option<usize>,
+    pub parallel_workers: Option<usize>,
+    pub total_processed: Option<usize>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,6 +53,7 @@ pub struct SystemStatus {
     pub registered_appimages: Vec<AppImageStatus>,
     pub storage_usage: StorageUsage,
     pub last_scan: Option<String>,
+    pub performance: Option<PerformanceMetrics>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -54,11 +66,10 @@ pub struct UnitStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StorageUsage {
-    pub bin_dir: DirectoryUsage,
-    pub raw_dir: DirectoryUsage,
-    pub icon_dir: DirectoryUsage,
-    pub total_size_bytes: u64,
+pub enum SecurityStatus {
+    Secure,
+    Warning(String),
+    Error(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -68,14 +79,27 @@ pub struct DirectoryUsage {
     pub size_bytes: u64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StorageUsage {
+    pub bin_dir: DirectoryUsage,
+    pub raw_dir: DirectoryUsage,
+    pub icon_dir: DirectoryUsage,
+    pub total_size_bytes: u64,
+}
+
 pub struct StatusReporter {
     config: Config,
+    version_manager: VersionManager,
 }
 
 impl StatusReporter {
     pub fn new() -> Result<Self, StatusError> {
         let config = Config::load()?;
-        Ok(StatusReporter { config })
+        let version_manager = VersionManager::new(config.clone());
+        Ok(StatusReporter {
+            config,
+            version_manager,
+        })
     }
 
     fn get_status(&self) -> Result<SystemStatus, StatusError> {
@@ -89,6 +113,7 @@ impl StatusReporter {
             registered_appimages,
             storage_usage,
             last_scan,
+            performance: None, // TODO: load from cache or config
         })
     }
 
@@ -134,34 +159,74 @@ impl StatusReporter {
 
     fn get_registered_appimages(&self) -> Result<Vec<AppImageStatus>, StatusError> {
         let mut appimages = Vec::new();
-        let bin_dir = self.config.bin_dir();
+        let security_checker = SecurityChecker {
+            verify_signatures: self.config.security.verify_signatures,
+            require_signatures: self.config.security.require_signatures,
+            warn_unsigned: self.config.security.warn_unsigned,
+            detect_sandboxing: self.config.security.detect_sandboxing,
+        };
 
-        if !bin_dir.exists() {
-            return Ok(appimages);
-        }
+        let apps = self
+            .version_manager
+            .list_apps()
+            .map_err(|e| StatusError::JsonError(e.to_string()))?;
 
-        for entry in fs::read_dir(&bin_dir)? {
-            let entry = entry?;
-            let path = entry.path();
+        for app_name in apps {
+            let versions = self
+                .version_manager
+                .list_versions(&app_name)
+                .map_err(|e| StatusError::JsonError(e.to_string()))?;
+            let current_version = self
+                .version_manager
+                .get_current_version(&app_name)
+                .map_err(|e| StatusError::JsonError(e.to_string()))?;
 
-            if path.extension().map(|e| e == "AppImage").unwrap_or(false) {
-                let metadata = fs::metadata(&path)?;
+            if let Some(active_version) = versions.iter().find(|v| v.is_active) {
+                let appimage_path = self
+                    .version_manager
+                    .get_appimage_path(&app_name, &active_version.version);
+                let metadata = fs::metadata(&appimage_path)?;
                 let size_bytes = metadata.len();
 
-                let name = path
-                    .file_stem()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("unknown")
-                    .to_string();
-
-                let version = self.extract_version_from_name(&name);
+                // Perform security check
+                let security_status = if let Ok(app) = AppImage::new(appimage_path.clone()) {
+                    match security_checker.check_appimage(&app) {
+                        Ok(report) => {
+                            security_checker.print_warnings(&app, &report);
+                            Some(match report.overall_status {
+                                crate::security::SecurityStatus::Secure => SecurityStatus::Secure,
+                                crate::security::SecurityStatus::Warning(msg) => {
+                                    SecurityStatus::Warning(msg)
+                                }
+                                crate::security::SecurityStatus::Error(msg) => {
+                                    SecurityStatus::Error(msg)
+                                }
+                            })
+                        }
+                        Err(e) => {
+                            tracing::warn!("Security check failed for {}: {}", app_name, e);
+                            Some(SecurityStatus::Error(format!(
+                                "Security check failed: {}",
+                                e
+                            )))
+                        }
+                    }
+                } else {
+                    None
+                };
 
                 appimages.push(AppImageStatus {
-                    name: name.clone(),
-                    version,
-                    path: path.display().to_string(),
+                    name: app_name.clone(),
+                    version: active_version.version.clone(),
+                    path: appimage_path.display().to_string(),
                     size_bytes,
-                    registered_at: self.get_file_modification_time(&path),
+                    registered_at: Some(
+                        active_version
+                            .installed_at
+                            .format("%Y-%m-%d %H:%M:%S UTC")
+                            .to_string(),
+                    ),
+                    security_status,
                 });
             }
         }
@@ -208,49 +273,22 @@ impl StatusReporter {
         })
     }
 
-    fn extract_version_from_name(&self, name: &str) -> String {
-        if let Some(pos) = name.rfind('-') {
-            let potential_version = &name[pos + 1..];
-            let version = potential_version
-                .strip_prefix('v')
-                .unwrap_or(potential_version);
-            if version.chars().all(|c| c.is_numeric() || c == '.') {
-                return version.to_string();
+    fn get_last_scan_timestamp(&self) -> Option<String> {
+        let apps = self.version_manager.list_apps().ok()?;
+
+        let mut latest_time = None;
+        for app_name in apps {
+            if let Ok(versions) = self.version_manager.list_versions(&app_name) {
+                for version in versions {
+                    let time = Some(version.installed_at);
+                    if latest_time.is_none() || time > latest_time {
+                        latest_time = time;
+                    }
+                }
             }
         }
-        "current".to_string()
-    }
 
-    fn get_file_modification_time(&self, path: &Path) -> Option<String> {
-        fs::metadata(path)
-            .ok()
-            .and_then(|m| m.modified().ok())
-            .map(|time| {
-                let datetime: chrono::DateTime<chrono::Utc> = time.into();
-                datetime.format("%Y-%m-%d %H:%M:%S UTC").to_string()
-            })
-    }
-
-    fn get_last_scan_timestamp(&self) -> Option<String> {
-        let bin_dir = self.config.bin_dir();
-
-        if !bin_dir.exists() {
-            return None;
-        }
-
-        fs::read_dir(bin_dir)
-            .ok()?
-            .filter_map(Result::ok)
-            .filter_map(|entry| {
-                fs::metadata(entry.path())
-                    .ok()
-                    .and_then(|m| m.modified().ok())
-            })
-            .max()
-            .map(|time| {
-                let datetime: chrono::DateTime<chrono::Utc> = time.into();
-                datetime.format("%Y-%m-%d %H:%M:%S UTC").to_string()
-            })
+        latest_time.map(|time| time.format("%Y-%m-%d %H:%M:%S UTC").to_string())
     }
 
     pub fn print_status(&self, json_output: bool) -> Result<(), StatusError> {
@@ -303,26 +341,33 @@ impl StatusReporter {
             println!("  No AppImages registered yet.");
         } else {
             println!(
-                "  {:<20} {:<12} {:<10} {:>10}",
-                "Name", "Version", "Size", "Registered"
+                "  {:<18} {:<10} {:<8} {:<12} {:>10}",
+                "Name", "Version", "Size", "Security", "Registered"
             );
             println!(
-                "  {:<20} {:<12} {:<10} {:>10}",
-                "─".repeat(20),
-                "─".repeat(12),
+                "  {:<18} {:<10} {:<8} {:<12} {:>10}",
+                "─".repeat(18),
                 "─".repeat(10),
+                "─".repeat(8),
+                "─".repeat(12),
                 "─".repeat(10)
             );
 
             for app in &status.registered_appimages {
+                let security_indicator = match &app.security_status {
+                    Some(SecurityStatus::Secure) => "✅",
+                    Some(SecurityStatus::Warning(_)) => "⚠️",
+                    Some(SecurityStatus::Error(_)) => "❌",
+                    None => "?",
+                };
+
                 println!(
-                    "  {:<20} {:<12} {:>10} {}",
+                    "  {:<18} {:<10} {:>8} {:<12} {}",
                     app.name,
                     app.version,
                     Self::format_size(app.size_bytes),
-                    app.registered_at
-                        .as_deref()
-                        .unwrap_or(&"unknown".to_string())
+                    security_indicator,
+                    app.registered_at.as_deref().unwrap_or("unknown")
                 );
             }
         }
@@ -353,6 +398,22 @@ impl StatusReporter {
             println!("\n⏰ Last Scan: {}", timestamp);
         }
 
+        if let Some(perf) = &status.performance {
+            println!("\n⚡ Performance Metrics:");
+            if let Some(duration) = perf.last_scan_duration {
+                println!("  Last scan duration: {:.2}s", duration);
+            }
+            if let Some(hits) = perf.cached_hits {
+                println!("  Cache hits: {}", hits);
+            }
+            if let Some(workers) = perf.parallel_workers {
+                println!("  Parallel workers: {}", workers);
+            }
+            if let Some(processed) = perf.total_processed {
+                println!("  Total processed: {}", processed);
+            }
+        }
+
         println!("\n═══════════════════════════════════════════════════════════════\n");
     }
 
@@ -377,14 +438,6 @@ mod tests {
     fn status_reporter_creates_successfully() {
         let reporter = StatusReporter::new().unwrap();
         assert!(reporter.config.raw_dir().ends_with("raw"));
-    }
-
-    #[test]
-    fn extract_version_from_name_works() {
-        let reporter = StatusReporter::new().unwrap();
-        assert_eq!(reporter.extract_version_from_name("test-app"), "current");
-        assert_eq!(reporter.extract_version_from_name("test-1.2.3"), "1.2.3");
-        assert_eq!(reporter.extract_version_from_name("app-v2"), "2");
     }
 
     #[test]
