@@ -6,6 +6,7 @@ use tracing::{debug, error, info, instrument, warn};
 
 use crate::core::{normalize_appimage_name, AppImage, AppImageError, Metadata};
 use crate::registrar::desktop_entry::DesktopEntry;
+use crate::registrar::icon_extractor;
 
 #[derive(Debug, Error)]
 pub enum ProcessError {
@@ -158,12 +159,12 @@ impl Processor {
         self.copy_appimage(&app_path, &dest)?;
         self.make_executable(&dest)?;
 
-        let metadata = self.extract_metadata(app_path, &normalized_name)?;
+        let (metadata, icon_path) = self.extract_metadata(app_path, &normalized_name)?;
 
         let desktop_path = self
             .desktop_dir
             .join(format!("{}.desktop", normalized_name));
-        self.create_desktop_entry(&metadata, &desktop_path)?;
+        self.create_desktop_entry(&metadata, &icon_path, &desktop_path)?;
 
         let symlink_path = self.symlink_dir.join(&normalized_name);
         self.create_symlink(&dest, &symlink_path)?;
@@ -205,7 +206,7 @@ impl Processor {
         &self,
         app_path: &Path,
         normalized_name: &str,
-    ) -> Result<Metadata, ProcessError> {
+    ) -> Result<(Metadata, Option<PathBuf>), ProcessError> {
         let tmp_dir = tempfile::TempDir::new()?;
         let app_root = tmp_dir.path().join("squashfs-root");
 
@@ -230,12 +231,20 @@ impl Processor {
         }
 
         let desktop_file = self.find_desktop_entry(&app_root)?;
+        let icon_path = icon_extractor::extract_icon(&app_root, &self.icon_dir, normalized_name)
+            .map_err(|e| {
+                ProcessError::Io(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    e.to_string(),
+                ))
+            })?;
 
         match desktop_file {
             Some(path) => {
                 debug!("Found desktop entry: {:?}", path);
-                Metadata::from_desktop_entry(&path)
-                    .map_err(|e| ProcessError::DesktopEntry(e.to_string()))
+                let metadata = Metadata::from_desktop_entry(&path)
+                    .map_err(|e| ProcessError::DesktopEntry(e.to_string()))?;
+                Ok((metadata, icon_path))
             }
             None => {
                 debug!("No desktop entry found, using defaults");
@@ -253,7 +262,7 @@ impl Processor {
                     normalized_name.chars().next().unwrap().to_uppercase(),
                     &normalized_name[1..]
                 );
-                Ok(metadata)
+                Ok((metadata, icon_path))
             }
         }
     }
@@ -278,12 +287,18 @@ impl Processor {
     fn create_desktop_entry(
         &self,
         metadata: &Metadata,
+        icon_path: &Option<PathBuf>,
         desktop_path: &Path,
     ) -> Result<(), ProcessError> {
+        let icon_str = icon_path
+            .as_ref()
+            .map(|p| p.display().to_string())
+            .unwrap_or_else(String::new);
+
         let entry = DesktopEntry::with_categories(
             metadata.name.clone(),
             desktop_path.display().to_string(),
-            "".to_string(),
+            icon_str,
             metadata.categories.clone(),
         );
 
