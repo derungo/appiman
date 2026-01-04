@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Status Module** (`src/status.rs`):
+  - Comprehensive system status reporting
+  - JSON output support via `--json` flag
+  - Display of systemd unit status, registered AppImages, and storage usage
+  - Last scan timestamp tracking
+  - Version extraction from AppImage names
+- **Icon Extraction Integration**:
+  - `Processor` now calls `IconExtractor` during metadata extraction
+  - Icons extracted to `/opt/applications/icons/` with correct extensions
+  - Desktop entries now include proper icon paths
+- **Architecture Documentation**:
+  - `docs/architecture/v0.3.0.md` with complete module architecture
+  - Data flow diagrams and API documentation
+  - Error handling strategy and testing approach
+- **Migration Guide**:
+  - `docs/migration/v0.2.0-to-v0.3.0.md` with detailed migration steps
+  - Breaking changes documentation
+  - Troubleshooting and rollback procedures
+
+### Changed
+- **Systemd Units Now Call Binary**:
+  - `register-appimages.service` runs `appiman scan` directly
+  - `move-appimages.service` runs `appiman ingest` directly
+  - Removed shell script dependencies from systemd integration
+- **Setup Module**:
+  - No longer installs shell scripts to `/usr/local/sbin`
+  - Simplified to only install systemd units
+- **Enhanced Tests**:
+  - Real integration tests for ingest (multi-user, file discovery)
+  - Real integration tests for scan (desktop entry creation)
+  - Removed hacky placeholder tests
+  - Added `Debug` and `PartialEq` derives to `AppImage` and `Metadata`
+
+### Fixed
+- Icon extraction not being called in `Processor`
+- Version extraction now handles `v` prefix in names
+- Clippy warning for `io::Error::new` replaced with `io::Error::other`
+
+### Breaking Changes
+- **Shell Scripts Removed**: `assets/*.sh` no longer embedded or installed
+- **Systemd Units Updated**: Existing installations must re-run `appiman init` to update units
+
 ---
 
 ## [0.3.0] - 2026-01-03
