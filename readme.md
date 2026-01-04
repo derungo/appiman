@@ -200,9 +200,9 @@ cargo run -- <command>
 
 See [ROADMAP.md](ROADMAP.md) for the full development plan from v0.3.0 to v1.0 and beyond.
 
-Current version: 0.3.0
+Current version: 0.3.1
 
-All Phase 1 Foundation & Modernization tasks completed. Next work focuses on Phase 2: Feature Expansion (v0.4.0).
+Phase 1 Foundation & Modernization (v0.3.0) completed. Currently working on Phase 2: Feature Expansion (v0.4.0).
 
 ## License
 
