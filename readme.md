@@ -56,7 +56,7 @@ cargo build --release
 install -Dm755 target/release/appiman /usr/local/bin/appiman
 ```
 
-**Note:** `appiman init` installs the embedded helper scripts + systemd unit files, so copying just the `appiman` binary is sufficient (you do not need a separate `assets/` directory on disk).
+**Note:** `appiman init` installs systemd unit files that call the appiman binary directly, so copying just the `appiman` binary is sufficient (you do not need a separate `assets/` directory on disk).
 
 ## Configuration
 
@@ -112,10 +112,10 @@ Appiman manages a fixed system directory tree:
 
 | Command | Description |
 |---------|-------------|
-| `init` | Creates `/opt/applications/*`, installs helper scripts and systemd units. Requires root. |
+| `init` | Creates `/opt/applications/*`, installs systemd units. Requires root. |
 | `enable` | Enables and starts the watcher service + path units. Requires root. |
 | `disable` | Disables and stops watcher path units. Requires root. |
-| `status` | Shows the health of all watcher paths and services. |
+| `status` | Shows the health of watcher paths, services, and registered AppImages. Supports `--json` flag. |
 | `ingest` | Moves user-downloaded AppImages into `/opt/applications/raw`. Requires root. |
 | `scan` | Manually re-runs the registrar to process all AppImages. Requires root. |
 | `sync` | Runs ingest + scan (full manual ingestion + registration). Requires root. |
@@ -200,9 +200,9 @@ cargo run -- <command>
 
 See [ROADMAP.md](ROADMAP.md) for the full development plan from v0.3.0 to v1.0 and beyond.
 
-Current version: 0.2.0
+Current version: 0.3.0
 
-Work for 0.3.0 (major improvements to the registrar, icon handling, and watcher logic) is underway.
+All Phase 1 Foundation & Modernization tasks completed. Next work focuses on Phase 2: Feature Expansion (v0.4.0).
 
 ## License
 
