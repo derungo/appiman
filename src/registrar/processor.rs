@@ -230,6 +230,9 @@ impl Processor {
             ));
         }
 
+        let app = AppImage::new(app_path.to_path_buf())?;
+        let checksum = app.get_checksum().map_err(|e| ProcessError::AppImage(e))?;
+
         let desktop_file = self.find_desktop_entry(&app_root)?;
         let icon_path = icon_extractor::extract_icon(&app_root, &self.icon_dir, normalized_name)
             .map_err(|e| {
@@ -242,21 +245,19 @@ impl Processor {
         match desktop_file {
             Some(path) => {
                 debug!("Found desktop entry: {:?}", path);
-                let metadata = Metadata::from_desktop_entry(&path)
+                let mut metadata = Metadata::from_desktop_entry(&path)
                     .map_err(|e| ProcessError::DesktopEntry(e.to_string()))?;
+                metadata.checksum = checksum.clone();
                 Ok((metadata, icon_path))
             }
             None => {
                 debug!("No desktop entry found, using defaults");
-                let mut metadata = Metadata::new(
-                    normalized_name
-                        .chars()
-                        .next()
-                        .unwrap()
-                        .to_uppercase()
-                        .collect::<String>()
-                        + &normalized_name[1..],
+                let display_name = format!(
+                    "{}{}",
+                    normalized_name.chars().next().unwrap().to_uppercase(),
+                    &normalized_name[1..]
                 );
+                let mut metadata = Metadata::new(display_name, checksum);
                 metadata.name = format!(
                     "{}{}",
                     normalized_name.chars().next().unwrap().to_uppercase(),

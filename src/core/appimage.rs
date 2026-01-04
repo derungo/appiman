@@ -1,3 +1,7 @@
+use hex;
+use sha2::{Digest, Sha256};
+use std::fs::File;
+use std::io::Read;
 use std::path::PathBuf;
 use thiserror::Error;
 
@@ -94,6 +98,22 @@ impl AppImage {
     pub fn is_executable(&self) -> Result<bool, AppImageError> {
         Ok(true)
     }
+
+    pub fn get_checksum(&self) -> Result<String, AppImageError> {
+        let mut file = File::open(&self.path)?;
+        let mut hasher = Sha256::new();
+        let mut buffer = [0u8; 8192];
+
+        loop {
+            let n = file.read(&mut buffer)?;
+            if n == 0 {
+                break;
+            }
+            hasher.update(&buffer[..n]);
+        }
+
+        Ok(hex::encode(hasher.finalize()))
+    }
 }
 
 #[cfg(test)]
@@ -147,5 +167,26 @@ mod tests {
 
         let app = AppImage::new(path).unwrap();
         assert!(app.validate().is_ok());
+    }
+
+    #[test]
+    fn get_checksum_returns_sha256_hash() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.AppImage");
+        let content = b"test content for checksum";
+
+        fs::write(&test_file, content).unwrap();
+
+        let app = AppImage::new(test_file).unwrap();
+        let checksum = app.get_checksum().unwrap();
+
+        assert_eq!(checksum.len(), 64);
+        assert!(checksum
+            .chars()
+            .all(|c| c.is_ascii_hexdigit() || c.is_ascii_lowercase()));
+
+        let expected_hash = sha2::Sha256::digest(content);
+        let expected_hex = hex::encode(expected_hash);
+        assert_eq!(checksum, expected_hex);
     }
 }
