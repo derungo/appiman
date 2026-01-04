@@ -8,6 +8,7 @@ pub struct DesktopEntry {
 }
 
 impl DesktopEntry {
+    #[allow(dead_code)]
     pub fn new(name: String, exec_path: String, icon_path: String) -> Self {
         DesktopEntry {
             name,

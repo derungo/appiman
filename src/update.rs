@@ -6,7 +6,7 @@ use thiserror::Error;
 use tracing::{debug, error, info, instrument, warn};
 
 use crate::config::Config;
-use crate::core::{AppImage, AppImageError, AppMetadata, VersionError, VersionManager};
+use crate::core::{AppImage, AppImageError, VersionError, VersionManager};
 
 #[derive(Debug, Error)]
 pub enum UpdateError {
@@ -23,9 +23,11 @@ pub enum UpdateError {
     UpdateFailed(String),
 
     #[error("No updates available")]
+    #[allow(dead_code)]
     NoUpdatesAvailable,
 
     #[error("Backup failed: {0}")]
+    #[allow(dead_code)]
     BackupFailed(String),
 
     #[error("Rollback failed: {0}")]
@@ -49,6 +51,7 @@ pub struct UpdateReport {
     pub checked: Vec<UpdateInfo>,
     pub updated: Vec<String>,
     pub failed: Vec<(String, String)>,
+    #[allow(dead_code)]
     pub skipped: Vec<String>,
 }
 
@@ -282,6 +285,7 @@ impl UpdateManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn create_backup(&self, app_path: &Path) -> Result<(), UpdateError> {
         let app_name = app_path
             .file_stem()
@@ -307,6 +311,7 @@ impl UpdateManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn cleanup_old_backups(&self, app_name: &str) -> Result<(), UpdateError> {
         let backup_dir = self.config.bin_dir().join("backups");
         if !backup_dir.exists() {
@@ -344,6 +349,7 @@ impl UpdateManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn get_backup_path(&self, app_name: &str) -> PathBuf {
         let timestamp = Utc::now().format("%Y%m%d_%H%M%S");
         let backup_dir = self.config.bin_dir().join("backups");
@@ -473,6 +479,7 @@ pub fn run_rollback(app_name: &str) -> Result<(), UpdateError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::AppMetadata;
     use std::fs;
     use tempfile::TempDir;
 
@@ -512,7 +519,7 @@ mod tests {
     #[test]
     fn extract_version_from_path_works() {
         let temp = TempDir::new().unwrap();
-        let config = create_test_config(&temp);
+        let _config = create_test_config(&temp);
         let manager = UpdateManager::new().unwrap();
 
         let path = PathBuf::from("/test/app-v1.2.3.AppImage");
@@ -527,7 +534,7 @@ mod tests {
     #[test]
     fn get_registered_appimages_returns_empty_when_no_bin_dir() {
         let temp = TempDir::new().unwrap();
-        let config = create_test_config(&temp);
+        let _config = create_test_config(&temp);
         let manager = UpdateManager::new().unwrap();
 
         let result = manager.get_registered_appimages();
@@ -594,7 +601,7 @@ mod tests {
     #[test]
     fn backup_path_generation_works() {
         let temp = TempDir::new().unwrap();
-        let config = create_test_config(&temp);
+        let _config = create_test_config(&temp);
         let manager = UpdateManager::new().unwrap();
 
         let backup_path = manager.get_backup_path("testapp");

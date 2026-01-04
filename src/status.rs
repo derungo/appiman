@@ -176,7 +176,7 @@ impl StatusReporter {
                 .version_manager
                 .list_versions(&app_name)
                 .map_err(|e| StatusError::JsonError(e.to_string()))?;
-            let current_version = self
+            let _current_version = self
                 .version_manager
                 .get_current_version(&app_name)
                 .map_err(|e| StatusError::JsonError(e.to_string()))?;

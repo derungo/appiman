@@ -4,6 +4,7 @@ use thiserror::Error;
 use tracing::debug;
 
 #[derive(Debug, Error)]
+#[allow(dead_code)]
 pub enum SymlinkError {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
@@ -12,6 +13,7 @@ pub enum SymlinkError {
     CreationFailed { path: PathBuf, reason: String },
 }
 
+#[allow(dead_code)]
 pub fn create_symlink(target: &Path, link_path: &Path) -> Result<(), SymlinkError> {
     debug!("Creating symlink: {:?} -> {:?}", link_path, target);
 

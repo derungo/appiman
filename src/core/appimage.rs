@@ -85,6 +85,7 @@ impl AppImage {
     }
 
     #[cfg(unix)]
+    #[allow(dead_code)]
     pub fn is_executable(&self) -> Result<bool, AppImageError> {
         use std::os::unix::fs::PermissionsExt;
         let metadata = std::fs::metadata(&self.path)?;
@@ -93,6 +94,7 @@ impl AppImage {
     }
 
     #[cfg(not(unix))]
+    #[allow(dead_code)]
     pub fn is_executable(&self) -> Result<bool, AppImageError> {
         Ok(true)
     }

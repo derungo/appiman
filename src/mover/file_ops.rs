@@ -29,6 +29,7 @@ pub enum MoveError {
 
 pub struct MoveReport {
     pub moved: Vec<PathBuf>,
+    #[allow(dead_code)]
     pub skipped: Vec<PathBuf>,
     pub errors: Vec<(PathBuf, String)>,
 }
@@ -70,6 +71,7 @@ impl Mover {
         }
     }
 
+    #[allow(dead_code)]
     pub fn with_dry_run(mut self, dry_run: bool) -> Self {
         self.dry_run = dry_run;
         self
@@ -112,6 +114,7 @@ impl Mover {
         Ok(report)
     }
 
+    #[allow(dead_code)]
     pub fn scan_and_move(&self, home_root: PathBuf) -> Result<MoveReport, MoveError> {
         let scanner = Scanner::new(home_root);
         let appimages = scanner.find_appimages()?;

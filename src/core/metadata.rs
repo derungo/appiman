@@ -6,6 +6,7 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum MetadataError {
     #[error("Failed to parse desktop entry: {0}")]
+    #[allow(dead_code)]
     ParseError(String),
 
     #[error("Invalid JSON: {0}")]
@@ -77,22 +78,27 @@ impl Metadata {
         Ok(metadata)
     }
 
+    #[allow(dead_code)]
     pub fn to_json(&self) -> Result<String, MetadataError> {
         Ok(serde_json::to_string_pretty(self)?)
     }
 
+    #[allow(dead_code)]
     pub fn from_json(s: &str) -> Result<Self, MetadataError> {
         Ok(serde_json::from_str(s)?)
     }
 
+    #[allow(dead_code)]
     pub fn set_version(&mut self, version: String) {
         self.version = Some(version);
     }
 
+    #[allow(dead_code)]
     pub fn set_icon_path(&mut self, path: String) {
         self.icon_path = Some(path);
     }
 
+    #[allow(dead_code)]
     pub fn set_name(&mut self, name: String) {
         self.name = name;
     }

@@ -250,6 +250,7 @@ impl VersionManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn migrate_legacy_app(
         &self,
         app_name: &str,

@@ -201,10 +201,12 @@ impl Config {
         PathBuf::from(&self.directories.home_root)
     }
 
+    #[allow(dead_code)]
     pub fn log_level(&self) -> &str {
         &self.logging.level
     }
 
+    #[allow(dead_code)]
     pub fn json_output(&self) -> bool {
         self.logging.json_output
     }

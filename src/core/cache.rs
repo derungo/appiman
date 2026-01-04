@@ -14,6 +14,7 @@ pub enum CacheError {
     Serde(#[from] serde_json::Error),
 
     #[error("Invalid cache entry")]
+    #[allow(dead_code)]
     InvalidEntry,
 }
 
@@ -99,6 +100,7 @@ impl MetadataCache {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn cleanup_stale_entries(&mut self, raw_dir: &Path) -> Result<(), CacheError> {
         if !raw_dir.exists() {
             return Ok(());
@@ -119,10 +121,12 @@ impl MetadataCache {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.entries.clear();
     }
 
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.entries.len()
     }

@@ -9,6 +9,7 @@ pub enum IconExtractError {
     Io(#[from] std::io::Error),
 
     #[error("No icon found in {path}")]
+    #[allow(dead_code)]
     NotFound { path: PathBuf },
 }
 

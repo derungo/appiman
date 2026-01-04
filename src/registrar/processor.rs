@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 use thiserror::Error;
 use tracing::{debug, error, info, instrument, warn};
 
-use crate::core::{normalize_appimage_name, AppImage, AppImageError, Metadata, MetadataCache, CacheError, VersionManager, VersionError};
+use crate::core::{normalize_appimage_name, AppImage, AppImageError, Metadata, MetadataCache, VersionManager, VersionError};
 use crate::registrar::desktop_entry::DesktopEntry;
 use crate::registrar::icon_extractor;
 use crate::security::SecurityChecker;
@@ -34,6 +34,7 @@ pub enum ProcessError {
 #[derive(Debug)]
 pub struct ProcessedApp {
     pub normalized_name: String,
+    #[allow(dead_code)]
     pub appimage_path: PathBuf,
 }
 
@@ -70,6 +71,7 @@ impl ProcessReport {
 
 pub struct Processor {
     pub raw_dir: PathBuf,
+    #[allow(dead_code)]
     pub bin_dir: PathBuf,
     pub icon_dir: PathBuf,
     pub desktop_dir: PathBuf,
@@ -125,6 +127,7 @@ impl Processor {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_dry_run(mut self, dry_run: bool) -> Self {
         self.dry_run = dry_run;
         self
@@ -284,7 +287,7 @@ impl Processor {
         }
 
         // If no version found, try to get from AppImage itself
-        if let Ok(app) = AppImage::new(app_path.to_path_buf()) {
+        if let Ok(_app) = AppImage::new(app_path.to_path_buf()) {
             // For now, use a timestamp-based version for new apps
             // In the future, this could extract version from AppImage metadata
             use chrono::Utc;

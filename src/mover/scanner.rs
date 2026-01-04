@@ -31,6 +31,7 @@ impl Scanner {
         }
     }
 
+    #[allow(dead_code)]
     pub fn with_excludes(home_root: PathBuf, exclude_dirs: Vec<PathBuf>) -> Self {
         Scanner {
             home_root,
@@ -64,6 +65,7 @@ impl Scanner {
         Ok(appimages)
     }
 
+    #[allow(dead_code)]
     pub fn find_user_dirs(&self) -> Result<Vec<PathBuf>, ScanError> {
         if !self.home_root.exists() {
             return Err(ScanError::HomeDirNotFound(

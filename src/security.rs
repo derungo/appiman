@@ -45,16 +45,19 @@ impl SecurityReport {
         }
     }
 
+    #[allow(dead_code)]
     pub fn with_warning(mut self, message: String) -> Self {
         self.overall_status = SecurityStatus::Warning(message);
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_error(mut self, message: String) -> Self {
         self.overall_status = SecurityStatus::Error(message);
         self
     }
 
+    #[allow(dead_code)]
     pub fn is_secure(&self) -> bool {
         matches!(self.overall_status, SecurityStatus::Secure)
     }
@@ -62,6 +65,7 @@ impl SecurityReport {
 
 pub struct SecurityChecker {
     pub verify_signatures: bool,
+    #[allow(dead_code)]
     pub require_signatures: bool,
     pub warn_unsigned: bool,
     pub detect_sandboxing: bool,
@@ -79,6 +83,7 @@ impl Default for SecurityChecker {
 }
 
 impl SecurityChecker {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self::default()
     }
