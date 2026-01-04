@@ -1,6 +1,6 @@
 pub mod conflict;
-pub mod mover;
+pub mod file_ops;
 pub mod scanner;
 
-pub use mover::Mover;
+pub use file_ops::Mover;
 pub use scanner::Scanner;
