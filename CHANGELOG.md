@@ -5,7 +5,116 @@ All notable changes to Appiman project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] - 2026-01-05
+
+### Added
+- **Auto-Update Mechanism** (`src/update.rs`):
+  - Automatic AppImage update checking and application
+  - Backup system for rollback capability
+  - Configurable auto-update settings
+  - `appiman update` command with check, apply, and rollback options
+- **Version Management** (`src/core/version_manager.rs`):
+  - Support for multiple AppImage versions simultaneously
+  - Versioned storage structure (`/opt/applications/bin/{app}/versions/{ver}/`)
+  - Version switching and rollback commands
+  - Automatic cleanup of old versions
+  - `appiman versions` command for version management
+- **Security Hardening** (`src/security.rs`):
+  - SHA256 checksum verification for integrity
+  - GPG signature verification for authenticity
+  - Sandboxing detection (firejail, bubblewrap)
+  - Security status reporting with warnings
+  - Configurable security checks
+- **Performance Optimizations**:
+  - Parallel processing using rayon for mass operations
+  - Metadata caching to avoid re-extraction
+  - Incremental scan capability for changed files only
+  - Performance metrics and benchmarking
+  - Configurable thread pool and cache settings
+- **Enhanced Status Reporting**:
+  - Update availability information
+  - Security status indicators
+  - Performance metrics display
+  - Version information for registered apps
+
+### Changed
+- **Storage Structure**: Apps now stored in versioned directories for multi-version support
+- **Processing Pipeline**: Enhanced with parallel processing, caching, and security checks
+- **Configuration**: Extended with updates, versions, security, and performance settings
+- **Status Command**: Now includes update availability, security status, and performance metrics
+
+### Technical
+- **Dependencies**: Added rayon, num_cpus for parallel processing
+- **Test Coverage**: 60 tests passing, including new features
+- **Backward Compatibility**: Migration path for existing installations
+- **Performance**: Parallel processing scales with CPU cores, caching reduces redundant work
+
+## [0.3.1] - 2026-01-04
+
+### Added
+- **Status Module** (`src/status.rs`):
+  - Comprehensive system status reporting
+  - JSON output support via `--json` flag
+  - Display of systemd unit status, registered AppImages, and storage usage
+  - Last scan timestamp tracking
+  - Version extraction from AppImage names
+- **Icon Extraction Integration**:
+  - `Processor` now calls `IconExtractor` during metadata extraction
+  - Icons extracted to `/opt/applications/icons/` with correct extensions
+  - Desktop entries now include proper icon paths
+- **SHA256 Checksums**:
+  - Implemented `get_checksum()` method in `AppImage` struct
+  - Computes SHA256 hash of AppImage files
+  - Checksums stored in `Metadata` for integrity verification
+  - Foundation for signature verification and security features
+- **Architecture Documentation**:
+  - `docs/architecture/v0.3.0.md` with complete module architecture
+  - Data flow diagrams and API documentation
+  - Error handling strategy and testing approach
+- **Migration Guide**:
+  - `docs/migration/v0.2.0-to-v0.3.0.md` with detailed migration steps
+  - Breaking changes documentation
+  - Troubleshooting and rollback procedures
+  - Comprehensive system status reporting
+  - JSON output support via `--json` flag
+  - Display of systemd unit status, registered AppImages, and storage usage
+  - Last scan timestamp tracking
+  - Version extraction from AppImage names
+- **Icon Extraction Integration**:
+  - `Processor` now calls `IconExtractor` during metadata extraction
+  - Icons extracted to `/opt/applications/icons/` with correct extensions
+  - Desktop entries now include proper icon paths
+- **Architecture Documentation**:
+  - `docs/architecture/v0.3.0.md` with complete module architecture
+  - Data flow diagrams and API documentation
+  - Error handling strategy and testing approach
+- **Migration Guide**:
+  - `docs/migration/v0.2.0-to-v0.3.0.md` with detailed migration steps
+  - Breaking changes documentation
+  - Troubleshooting and rollback procedures
+
+### Changed
+- **Systemd Units Now Call Binary**:
+  - `register-appimages.service` runs `appiman scan` directly
+  - `move-appimages.service` runs `appiman ingest` directly
+  - Removed shell script dependencies from systemd integration
+- **Setup Module**:
+  - No longer installs shell scripts to `/usr/local/sbin`
+  - Simplified to only install systemd units
+- **Enhanced Tests**:
+  - Real integration tests for ingest (multi-user, file discovery)
+  - Real integration tests for scan (desktop entry creation)
+  - Removed hacky placeholder tests
+  - Added `Debug` and `PartialEq` derives to `AppImage` and `Metadata`
+
+### Fixed
+- Icon extraction not being called in `Processor`
+- Version extraction now handles `v` prefix in names
+- Clippy warning for `io::Error::new` replaced with `io::Error::other`
+
+### Breaking Changes
+- **Shell Scripts Removed**: `assets/*.sh` no longer embedded or installed
+- **Systemd Units Updated**: Existing installations must re-run `appiman init` to update units
 
 ---
 

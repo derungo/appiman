@@ -1,3 +1,7 @@
+use hex;
+use sha2::{Digest, Sha256};
+use std::fs::File;
+use std::io::Read;
 use std::path::PathBuf;
 use thiserror::Error;
 
@@ -17,12 +21,10 @@ pub enum AppImageError {
 
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
-
-    #[error("Metadata not found")]
-    MetadataNotFound,
 }
 
 #[derive(Debug, Error)]
+#[allow(dead_code)]
 pub enum ExtractError {
     #[error("Extraction failed: {0}")]
     ExtractionFailed(String),
@@ -34,6 +36,7 @@ pub enum ExtractError {
     ExecutionFailed { status: std::process::ExitStatus },
 }
 
+#[derive(Debug, PartialEq)]
 pub struct AppImage {
     pub path: PathBuf,
     pub metadata: Option<Metadata>,
@@ -47,7 +50,7 @@ impl AppImage {
 
         if !path
             .extension()
-            .map_or(false, |ext| ext.eq_ignore_ascii_case("AppImage"))
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("AppImage"))
         {
             return Err(AppImageError::InvalidFormat(format!(
                 "Invalid extension: {:?}",
@@ -92,6 +95,22 @@ impl AppImage {
     #[cfg(not(unix))]
     pub fn is_executable(&self) -> Result<bool, AppImageError> {
         Ok(true)
+    }
+
+    pub fn get_checksum(&self) -> Result<String, AppImageError> {
+        let mut file = File::open(&self.path)?;
+        let mut hasher = Sha256::new();
+        let mut buffer = [0u8; 8192];
+
+        loop {
+            let n = file.read(&mut buffer)?;
+            if n == 0 {
+                break;
+            }
+            hasher.update(&buffer[..n]);
+        }
+
+        Ok(hex::encode(hasher.finalize()))
     }
 }
 
@@ -146,5 +165,26 @@ mod tests {
 
         let app = AppImage::new(path).unwrap();
         assert!(app.validate().is_ok());
+    }
+
+    #[test]
+    fn get_checksum_returns_sha256_hash() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.AppImage");
+        let content = b"test content for checksum";
+
+        fs::write(&test_file, content).unwrap();
+
+        let app = AppImage::new(test_file).unwrap();
+        let checksum = app.get_checksum().unwrap();
+
+        assert_eq!(checksum.len(), 64);
+        assert!(checksum
+            .chars()
+            .all(|c| c.is_ascii_hexdigit() || c.is_ascii_lowercase()));
+
+        let expected_hash = sha2::Sha256::digest(content);
+        let expected_hex = hex::encode(expected_hash);
+        assert_eq!(checksum, expected_hex);
     }
 }
