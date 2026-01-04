@@ -4,10 +4,11 @@
 Transform Appiman into the definitive system-wide AppImage lifecycle management solution for Linux workstations, providing seamless discovery, registration, updates, and cleanup of AppImages without requiring AppImageLauncher or manual configuration.
 
 ## Current Status
-- **Version**: 0.3.0 (phase-2 branch)
+- **Version**: 0.3.1 (phase-2 branch)
 - **Latest Release**: v0.3.0 - January 3, 2026
+- **Current Patch**: v0.3.1 - January 4, 2026 (Unreleased)
 - **Primary Languages**: Rust (11,000+ lines), Shell (3,928 bytes - legacy)
-- **Test Coverage**: 47/47 tests passing
+- **Test Coverage**: 51/53 tests passing
 - **CI/CD**: GitHub Actions operational (Ubuntu 20.04, 22.04, 24.04)
 
 ## Overview
@@ -82,11 +83,29 @@ This roadmap outlines the journey from v0.3.0 to v1.0 and beyond, focusing on te
 
 **Target Release**: v0.3.0 (Q1 2026) ✅ **RELEASED January 3, 2026**
 **Key Metrics**: 100% test coverage (47/47), zero compilation errors
+**Status**: **COMPLETED** - Phase 1 complete, v0.3.0 released
+
+---
+
+## Patch Release: v0.3.1
+
+### Improvements (January 4, 2026)
+- ✅ **Status Module**: Comprehensive system reporting with JSON output
+- ✅ **Icon Extraction**: Fully integrated in processor pipeline
+- ✅ **Integration Tests**: Proper functional tests replacing placeholders
+- ✅ **Documentation**: Architecture guide and migration guide added
+- ✅ **Code Quality**: Clippy warnings fixed, proper derives added
+- **Test Coverage**: Increased to 51/53 tests passing
+
+**Target Release**: v0.3.1 (Q1 2026) - Unreleased
+**Status**: **IN PROGRESS** - Patch release ready
 
 ---
 
 ## Phase 2: Feature Expansion (v0.4.0) **IN PROGRESS**
 **Goal**: Add user-requested features and enhanced functionality
+**Start Date**: January 4, 2026
+**Estimated Release**: Q2 2026
 
 ### 2.1 Auto-Update Mechanism
 - [ ] Integrate with AppImageUpdater
