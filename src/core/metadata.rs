@@ -26,20 +26,20 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn new(name: String) -> Self {
+    pub fn new(name: String, checksum: String) -> Self {
         Metadata {
             name,
             version: None,
             categories: vec!["Utility".to_string()],
             icon_path: None,
             extracted_at: Utc::now(),
-            checksum: String::new(),
+            checksum,
         }
     }
 
     pub fn from_desktop_entry(path: &Path) -> Result<Self, MetadataError> {
         let content = std::fs::read_to_string(path)?;
-        let mut metadata = Metadata::new("Unknown".to_string());
+        let mut metadata = Metadata::new("Unknown".to_string(), String::new());
 
         for line in content.lines() {
             if line.starts_with("Name=") {
@@ -104,16 +104,17 @@ Icon=testapp
 
     #[test]
     fn metadata_serialization_works() {
-        let metadata = Metadata::new("TestApp".to_string());
+        let metadata = Metadata::new("TestApp".to_string(), "abc123".to_string());
         let json = metadata.to_json().unwrap();
         let deserialized = Metadata::from_json(&json).unwrap();
 
         assert_eq!(metadata.name, deserialized.name);
+        assert_eq!(metadata.checksum, deserialized.checksum);
     }
 
     #[test]
     fn metadata_setters_work() {
-        let mut metadata = Metadata::new("TestApp".to_string());
+        let mut metadata = Metadata::new("TestApp".to_string(), "abc123".to_string());
 
         metadata.set_version("1.0.0".to_string());
         assert_eq!(metadata.version, Some("1.0.0".to_string()));
