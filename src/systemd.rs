@@ -33,8 +33,7 @@ fn enable_units(systemctl: &str, units: &[&str]) -> io::Result<()> {
     }
 
     if !failures.is_empty() {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
+        return Err(io::Error::other(
             format!("Failed to enable/start: {}", failures.join(", ")),
         ));
     }

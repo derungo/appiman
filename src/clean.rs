@@ -6,12 +6,17 @@ use regex::Regex;
 use std::fs;
 use std::io;
 
+lazy_static::lazy_static! {
+    static ref CLEAN_REGEX: Regex = Regex::new(
+        r"(?i)(-v[\d\.]+|[-_.]?(x86_64|amd64|linux|i386|setup))"
+    ).unwrap();
+}
+
 pub fn run_cleanup() -> io::Result<()> {
     require_root()?;
 
     let config = Config::load().map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
+        io::Error::other(
             format!("Failed to load config: {}", e),
         )
     })?;
@@ -23,7 +28,7 @@ pub fn run_cleanup() -> io::Result<()> {
 
     println!("🧹 Cleaning up legacy AppImage files and artifacts...");
 
-    let re = Regex::new(r"(?i)(-v[\d\.]+|[-_.]?(x86_64|amd64|linux|i386|setup))").unwrap();
+    let re = &CLEAN_REGEX;
 
     let mut had_errors = false;
 
@@ -46,8 +51,8 @@ pub fn run_cleanup() -> io::Result<()> {
     if let Ok(entries) = fs::read_dir(&symlink_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if let Ok(target) = fs::read_link(&path) {
-                if !target.exists() || re.is_match(&target.to_string_lossy()) {
+            if let Ok(target) = fs::read_link(&path)
+                && (!target.exists() || re.is_match(&target.to_string_lossy())) {
                     if let Err(err) = fs::remove_file(&path) {
                         had_errors = true;
                         eprintln!("⚠️ Failed to remove symlink {}: {}", path.display(), err);
@@ -55,7 +60,6 @@ pub fn run_cleanup() -> io::Result<()> {
                         println!("Removed symlink: {}", path.display());
                     }
                 }
-            }
         }
     }
 
@@ -63,9 +67,9 @@ pub fn run_cleanup() -> io::Result<()> {
     if let Ok(entries) = fs::read_dir(&desktop_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().map(|e| e == "desktop").unwrap_or(false) {
-                if let Ok(content) = fs::read_to_string(&path) {
-                    if content.contains(bin_dir.to_string_lossy().as_ref()) && re.is_match(&content)
+            if path.extension().is_some_and(|e| e == "desktop")
+                && let Ok(content) = fs::read_to_string(&path)
+                    && content.contains(bin_dir.to_string_lossy().as_ref()) && re.is_match(&content)
                     {
                         if let Err(err) = fs::remove_file(&path) {
                             had_errors = true;
@@ -78,8 +82,6 @@ pub fn run_cleanup() -> io::Result<()> {
                             println!("Removed desktop entry: {}", path.display());
                         }
                     }
-                }
-            }
         }
     }
 
@@ -99,8 +101,7 @@ pub fn run_cleanup() -> io::Result<()> {
     }
 
     if had_errors {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
+        return Err(io::Error::other(
             "Cleanup completed with errors.",
         ));
     }

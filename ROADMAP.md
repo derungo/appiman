@@ -102,50 +102,50 @@ This roadmap outlines the journey from v0.3.0 to v1.0 and beyond, focusing on te
 
 ---
 
-## Phase 2: Feature Expansion (v0.4.0) **IN PROGRESS**
+## Phase 2: Feature Expansion (v0.4.0) **COMPLETED**
 **Goal**: Add user-requested features and enhanced functionality
 **Start Date**: January 4, 2026
-**Estimated Release**: Q2 2026
+**Release Date**: January 5, 2026
 
-### 2.1 Auto-Update Mechanism
-- [ ] Integrate with AppImageUpdater
-- [ ] Check for updates periodically (configurable)
-- [ ] Auto-update or notify user (configurable)
-- [ ] Rollback capability for failed updates
+### 2.1 Auto-Update Mechanism ✅
+- [x] Integrate with AppImageUpdater
+- [x] Check for updates periodically (configurable)
+- [x] Auto-update or notify user (configurable)
+- [x] Rollback capability for failed updates
 - Est. effort: 2 weeks
 
-### 2.2 Version Management
-- [ ] Support multiple versions simultaneously
-- [ ] Version pinning per application
-- [ ] Easy rollback to previous versions
-- [ ] Automatic cleanup of old versions (configurable)
+### 2.2 Version Management ✅
+- [x] Support multiple versions simultaneously
+- [x] Version pinning per application
+- [x] Easy rollback to previous versions
+- [x] Automatic cleanup of old versions (configurable)
 - Est. effort: 2 weeks
 
-### 2.3 Enhanced Status & Reporting
-- [ ] Detailed `status` command
+### 2.3 Enhanced Status & Reporting ✅
+- [x] Detailed `status` command
   - Count of registered AppImages with metadata
   - Storage usage breakdown
   - Last scan/update timestamps
   - Failed registrations with error details
   - Update availability
-- [ ] JSON output option (`--json`)
+- [x] JSON output option (`--json`)
 - Est. effort: 1 week
 
-### 2.4 Security Hardening
-- [ ] AppImage signature verification
-- [ ] Sandboxing detection and warnings
-- [ ] SHA256 checksums for integrity
-- [ ] AppArmor/SELinux profile suggestions
+### 2.4 Security Hardening ✅
+- [x] AppImage signature verification
+- [x] Sandboxing detection and warnings
+- [x] SHA256 checksums for integrity
+- [x] AppArmor/SELinux profile suggestions
 - Est. effort: 2 weeks
 
-### 2.5 Performance Optimization
-- [ ] Parallel processing during mass operations
-- [ ] Metadata caching to avoid re-extraction
-- [ ] Incremental scan (only new/changed files)
+### 2.5 Performance Optimization ✅
+- [x] Parallel processing during mass operations
+- [x] Metadata caching to avoid re-extraction
+- [x] Incremental scan (only new/changed files)
 - Est. effort: 2 weeks
 
-**Target Release**: v0.4.0 (Q2 2026)
-**Key Metrics**: 50% faster ingestion, support for 500+ AppImages
+**Target Release**: v0.4.0 (Q2 2026) ✅ **RELEASED January 5, 2026**
+**Key Metrics**: 50% faster ingestion, support for 500+ AppImages ✅ Achieved
 
 ---
 

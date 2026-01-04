@@ -53,15 +53,12 @@ impl Scanner {
             .filter_entry(|e| !self.is_excluded(e))
             .filter_map(|e| e.ok())
         {
-            if entry.file_type().is_file() {
-                if let Some(ext) = entry.path().extension() {
-                    if ext.eq_ignore_ascii_case("AppImage") {
-                        if let Ok(app) = AppImage::new(entry.path().to_path_buf()) {
+            if entry.file_type().is_file()
+                && let Some(ext) = entry.path().extension()
+                    && ext.eq_ignore_ascii_case("AppImage")
+                        && let Ok(app) = AppImage::new(entry.path().to_path_buf()) {
                             appimages.push(app);
                         }
-                    }
-                }
-            }
         }
 
         Ok(appimages)
