@@ -34,6 +34,7 @@ pub enum ExtractError {
     ExecutionFailed { status: std::process::ExitStatus },
 }
 
+#[derive(Debug, PartialEq)]
 pub struct AppImage {
     pub path: PathBuf,
     pub metadata: Option<Metadata>,

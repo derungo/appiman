@@ -15,7 +15,7 @@ pub enum MetadataError {
     Io(#[from] std::io::Error),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Metadata {
     pub name: String,
     pub version: Option<String>,

@@ -2,7 +2,7 @@ use crate::config::Config;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 use thiserror::Error;
 
@@ -372,7 +372,6 @@ impl StatusReporter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
 
     #[test]
     fn status_reporter_creates_successfully() {
