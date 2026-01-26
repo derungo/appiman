@@ -8,7 +8,7 @@ which = "5"
 tempfile = "3"
 dirs = "5"
 regex = "1"
-nix = { version = "0.27", features = ["user"] }
+nix = { version = "0.31", features = ["user"] }
 thiserror = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
