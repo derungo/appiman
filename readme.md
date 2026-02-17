@@ -29,7 +29,7 @@ Appiman ships with systemd units and configurable settings that:
 3. **Ingest them** into a shared `/opt/applications/raw` staging area
 4. **Register each AppImage** as a normalized executable under `/opt/applications/bin`
 5. **Extract icons**, create `.desktop` files, and maintain `/usr/local/bin` symlinks
-6. **Automatically react** to new downloads through systemd `.path` watchers
+6. **Automatically react** to new downloads through systemd timer-based ingestion (every 60 seconds)
 7. **Provide simple CLI** commands for initialization, enabling/disabling units, manual rescans, and cleanup
 
 ## Installation
@@ -246,8 +246,8 @@ Appiman manages a fixed system directory tree:
 | Command | Description |
 |---------|-------------|
 | `init` | Creates `/opt/applications/*`, installs systemd units. Requires root. |
-| `enable` | Enables and starts the watcher service + path units. Requires root. |
-| `disable` | Disables and stops watcher path units. Requires root. |
+| `enable` | Enables and starts the watcher timer + path units. Requires root. |
+| `disable` | Disables and stops watcher timer + path units. Requires root. |
 | `status` | Shows the health of watcher paths, services, and registered AppImages. Supports `--json` flag. |
 | `ingest` | Moves user-downloaded AppImages into `/opt/applications/raw`. Requires root. |
 | `scan` | Manually re-runs the registrar to process all AppImages. Requires root. |
@@ -273,7 +273,7 @@ If you have AppImages already downloaded before installing appiman, you'll need 
 sudo appiman sync    # One-time ingestion of existing AppImages
 ```
 
-After this first manual sync, the systemd watchers will handle all future downloads automatically.
+After this first manual sync, the systemd timer will scan for new AppImages every 60 seconds and handle them automatically.
 
 ### Manual Processing
 
@@ -298,8 +298,9 @@ tests/      # Integration tests for shell scripts
 |------|---------|
 | `assets/move-appimages.sh` | Recursively finds user-owned AppImages and moves them into `/opt/applications/raw` |
 | `assets/register-appimages.sh` | Normalizes names, installs AppImages under `bin/`, extracts icons, creates `.desktop` entries, and cleans stale symlinks/icons |
-| `assets/*.service` | Systemd services that execute the scripts |
-| `assets/*.path` | Systemd path watchers that monitor `raw/` and react instantly to new files |
+| `assets/*.service` | Systemd services that execute the appiman commands |
+| `assets/*.timer` | Systemd timer that runs ingestion every 60 seconds |
+| `assets/*.path` | Systemd path watchers that monitor `raw/` and react to new files |
 
 ## Development
 
