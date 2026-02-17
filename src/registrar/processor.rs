@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use thiserror::Error;
@@ -311,6 +311,8 @@ impl Processor {
         let status = Command::new(app_path)
             .arg("--appimage-extract")
             .current_dir(tmp_dir.path())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .status()?;
 
         if !status.success() {
@@ -517,7 +519,6 @@ impl Processor {
     }
 
 }
-
 
 
 
