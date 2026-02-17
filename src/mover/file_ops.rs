@@ -133,14 +133,26 @@ impl Mover {
         if dest.exists() {
             let resolved_dest = handle_collision(&app.path, &dest)?;
             if resolved_dest != app.path {
-                std::fs::rename(&app.path, &resolved_dest)?;
+                self.move_path(&app.path, &resolved_dest)?;
                 self.set_permissions(&resolved_dest)?;
             }
             Ok(resolved_dest)
         } else {
-            std::fs::rename(&app.path, &dest)?;
+            self.move_path(&app.path, &dest)?;
             self.set_permissions(&dest)?;
             Ok(dest)
+        }
+    }
+
+    fn move_path(&self, source: &Path, dest: &Path) -> Result<(), MoveError> {
+        match std::fs::rename(source, dest) {
+            Ok(()) => Ok(()),
+            Err(err) if is_cross_device_error(&err) => {
+                std::fs::copy(source, dest)?;
+                std::fs::remove_file(source)?;
+                Ok(())
+            }
+            Err(err) => Err(MoveError::Io(err)),
         }
     }
 
@@ -174,6 +186,19 @@ impl Mover {
     #[cfg(not(unix))]
     fn set_permissions(&self, _path: &Path) -> Result<(), MoveError> {
         Ok(())
+    }
+}
+
+fn is_cross_device_error(err: &std::io::Error) -> bool {
+    #[cfg(unix)]
+    {
+        err.raw_os_error() == Some(18)
+    }
+
+    #[cfg(not(unix))]
+    {
+        let _ = err;
+        false
     }
 }
 
@@ -268,5 +293,18 @@ mod tests {
 
         assert!(dest.exists());
         assert!(dest.join("Test.AppImage").exists());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn cross_device_error_detection_matches_exdev() {
+        let err = std::io::Error::from_raw_os_error(18);
+        assert!(is_cross_device_error(&err));
+    }
+
+    #[test]
+    fn cross_device_error_detection_rejects_other_errors() {
+        let err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "denied");
+        assert!(!is_cross_device_error(&err));
     }
 }
