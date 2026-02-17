@@ -4,11 +4,11 @@ use crate::privileges::require_root;
 use std::io;
 use std::process::Command;
 
-const PATH_UNITS: &[&str] = &["register-appimages.path", "move-appimages.path"];
+const PATH_UNITS: &[&str] = &["register-appimages.path", "move-appimages.timer"];
 
 const STATUS_UNITS: &[&str] = &[
     "register-appimages.path",
-    "move-appimages.path",
+    "move-appimages.timer",
     "register-appimages.service",
     "move-appimages.service",
 ];
@@ -33,9 +33,10 @@ fn enable_units(systemctl: &str, units: &[&str]) -> io::Result<()> {
     }
 
     if !failures.is_empty() {
-        return Err(io::Error::other(
-            format!("Failed to enable/start: {}", failures.join(", ")),
-        ));
+        return Err(io::Error::other(format!(
+            "Failed to enable/start: {}",
+            failures.join(", ")
+        )));
     }
 
     Ok(())
@@ -71,7 +72,7 @@ pub fn enable_all() -> io::Result<()> {
 
     let systemctl = systemctl_bin();
     enable_units(&systemctl, PATH_UNITS)?;
-    println!("✅ All .path units enabled and started.");
+    println!("✅ All watcher units enabled and started.");
     Ok(())
 }
 
@@ -80,7 +81,7 @@ pub fn disable_all() -> io::Result<()> {
 
     let systemctl = systemctl_bin();
     disable_units(&systemctl, PATH_UNITS)?;
-    println!("✅ All .path units disabled and stopped.");
+    println!("✅ All watcher units disabled and stopped.");
     Ok(())
 }
 
