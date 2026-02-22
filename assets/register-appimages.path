@@ -3,9 +3,8 @@ Description=Watch for new AppImages in /opt/applications/raw
 
 
 [Path]
-PathChanged=/opt/applications/raw
-PathModified=/opt/applications/raw
-DirectoryNotEmpty=/opt/applications/raw
+PathExistsGlob=/opt/applications/raw/*.AppImage
+PathExistsGlob=/opt/applications/raw/*.appimage
 
 
 [Install]

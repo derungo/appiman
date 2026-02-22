@@ -252,15 +252,14 @@ impl Processor {
         // Extract metadata and create desktop entry
         let (metadata, icon_path) = self.extract_metadata(app_path, &normalized_name)?;
 
-        let desktop_path = self
-            .desktop_dir
-            .join(format!("{}.desktop", normalized_name));
-        self.create_desktop_entry(&metadata, &icon_path, &desktop_path)?;
-
-        // Update symlink to point to current version
         let current_appimage = self.version_manager.get_appimage_path(&normalized_name, &version);
         let symlink_path = self.symlink_dir.join(&normalized_name);
         self.create_symlink(&current_appimage, &symlink_path)?;
+
+        let desktop_path = self
+            .desktop_dir
+            .join(format!("{}.desktop", normalized_name));
+        self.create_desktop_entry(&metadata, &icon_path, &symlink_path, &desktop_path)?;
 
         info!("Running appimage-update check for {}", normalized_name);
         let _ = Command::new(&current_appimage).arg("--appimage-update").output();
@@ -384,6 +383,7 @@ impl Processor {
         &self,
         metadata: &Metadata,
         icon_path: &Option<PathBuf>,
+        exec_path: &Path,
         desktop_path: &Path,
     ) -> Result<(), ProcessError> {
         let icon_str = icon_path
@@ -393,7 +393,7 @@ impl Processor {
 
         let entry = DesktopEntry::with_categories(
             metadata.name.clone(),
-            desktop_path.display().to_string(),
+            exec_path.display().to_string(),
             icon_str,
             metadata.categories.clone(),
         );
@@ -459,11 +459,16 @@ impl Processor {
                 if cache.is_cached(app_path, &checksum) {
                     if let Some(cached) = cache.get_cached_entry(app_path) {
                         debug!("Cache hit for: {:?}", app_path);
-                        // Return cached result without full processing
-                        return Ok(ProcessedApp {
-                            normalized_name: cached.normalized_name.clone(),
-                            appimage_path: app_path.to_path_buf(),
-                        });
+                        if self.cache_entry_is_usable(&cached.normalized_name) {
+                            return Ok(ProcessedApp {
+                                normalized_name: cached.normalized_name.clone(),
+                                appimage_path: app_path.to_path_buf(),
+                            });
+                        }
+                        debug!(
+                            "Cache hit requires repair for {} (desktop entry or symlink stale)",
+                            cached.normalized_name
+                        );
                     }
                 }
             }
@@ -493,6 +498,20 @@ impl Processor {
         Ok(result)
     }
 
+    fn cache_entry_is_usable(&self, normalized_name: &str) -> bool {
+        let desktop_path = self.desktop_dir.join(format!("{}.desktop", normalized_name));
+        let symlink_path = self.symlink_dir.join(normalized_name);
+        if !desktop_path.exists() || !symlink_path.exists() {
+            return false;
+        }
+
+        let expected_exec = format!("Exec={}", symlink_path.display());
+        match fs::read_to_string(&desktop_path) {
+            Ok(content) => content.lines().any(|line| line.trim() == expected_exec),
+            Err(_) => false,
+        }
+    }
+
     fn create_symlink(&self, target: &Path, link_path: &Path) -> Result<(), ProcessError> {
         use std::os::unix::fs::symlink as unix_symlink;
 
@@ -520,7 +539,118 @@ impl Processor {
 
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Config;
+    use std::fs;
+    use tempfile::TempDir;
 
+    #[test]
+    fn desktop_entry_exec_points_to_symlink_target() {
+        let temp = TempDir::new().unwrap();
+        let raw_dir = temp.path().join("raw");
+        let bin_dir = temp.path().join("bin");
+        let icon_dir = temp.path().join("icons");
+        let desktop_dir = temp.path().join("desktop");
+        let symlink_dir = temp.path().join("symlinks");
+
+        fs::create_dir_all(&raw_dir).unwrap();
+        fs::create_dir_all(&bin_dir).unwrap();
+        fs::create_dir_all(&icon_dir).unwrap();
+        fs::create_dir_all(&desktop_dir).unwrap();
+        fs::create_dir_all(&symlink_dir).unwrap();
+
+        let mut config = Config::default();
+        config.directories.raw = raw_dir.display().to_string();
+        config.directories.bin = bin_dir.display().to_string();
+        config.directories.icons = icon_dir.display().to_string();
+        config.directories.desktop = desktop_dir.display().to_string();
+        config.directories.symlink = symlink_dir.display().to_string();
+
+        let processor = Processor::new(
+            raw_dir,
+            bin_dir,
+            icon_dir,
+            desktop_dir.clone(),
+            symlink_dir.clone(),
+            VersionManager::new(config),
+            SecurityChecker::new(),
+        );
+
+        let metadata = Metadata::new("Test App".to_string(), "checksum".to_string());
+        let exec_path = symlink_dir.join("test-app");
+        let desktop_path = desktop_dir.join("test-app.desktop");
+
+        processor
+            .create_desktop_entry(&metadata, &None, &exec_path, &desktop_path)
+            .unwrap();
+
+        let content = fs::read_to_string(desktop_path).unwrap();
+        assert!(content.contains(&format!("Exec={}", exec_path.display())));
+        assert!(!content.contains("Exec=/usr/share/applications/"));
+    }
+
+    #[test]
+    fn cache_entry_is_usable_requires_expected_exec_and_symlink() {
+        let temp = TempDir::new().unwrap();
+        let raw_dir = temp.path().join("raw");
+        let bin_dir = temp.path().join("bin");
+        let icon_dir = temp.path().join("icons");
+        let desktop_dir = temp.path().join("desktop");
+        let symlink_dir = temp.path().join("symlinks");
+
+        fs::create_dir_all(&raw_dir).unwrap();
+        fs::create_dir_all(&bin_dir).unwrap();
+        fs::create_dir_all(&icon_dir).unwrap();
+        fs::create_dir_all(&desktop_dir).unwrap();
+        fs::create_dir_all(&symlink_dir).unwrap();
+
+        let mut config = Config::default();
+        config.directories.raw = raw_dir.display().to_string();
+        config.directories.bin = bin_dir.display().to_string();
+        config.directories.icons = icon_dir.display().to_string();
+        config.directories.desktop = desktop_dir.display().to_string();
+        config.directories.symlink = symlink_dir.display().to_string();
+
+        let processor = Processor::new(
+            raw_dir,
+            bin_dir,
+            icon_dir,
+            desktop_dir.clone(),
+            symlink_dir.clone(),
+            VersionManager::new(config),
+            SecurityChecker::new(),
+        );
+
+        let name = "demoapp";
+        let symlink_path = symlink_dir.join(name);
+        let target = temp.path().join("demoapp.AppImage");
+        fs::write(&target, b"fake").unwrap();
+        std::os::unix::fs::symlink(&target, &symlink_path).unwrap();
+
+        let desktop_path = desktop_dir.join(format!("{}.desktop", name));
+        fs::write(
+            &desktop_path,
+            format!(
+                "[Desktop Entry]\nType=Application\nName=Demo\nExec={}\n",
+                symlink_path.display()
+            ),
+        )
+        .unwrap();
+        assert!(processor.cache_entry_is_usable(name));
+
+        fs::write(
+            &desktop_path,
+            format!(
+                "[Desktop Entry]\nType=Application\nName=Demo\nExec={}\n",
+                desktop_path.display()
+            ),
+        )
+        .unwrap();
+        assert!(!processor.cache_entry_is_usable(name));
+    }
+}
 
 
 
