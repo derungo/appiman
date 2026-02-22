@@ -35,6 +35,16 @@ impl DesktopEntry {
     }
 
     pub fn to_file_content(&self) -> String {
+        let name = sanitize_desktop_value(&self.name);
+        let exec_path = sanitize_desktop_value(&self.exec_path);
+        let icon_path = sanitize_desktop_value(&self.icon_path);
+        let categories = self
+            .categories
+            .iter()
+            .map(|c| sanitize_desktop_value(c))
+            .collect::<Vec<_>>()
+            .join(";");
+
         format!(
             "[Desktop Entry]\n\
             Type=Application\n\
@@ -43,13 +53,17 @@ impl DesktopEntry {
             Icon={}\n\
             Terminal={}\n\
             Categories={}\n",
-            self.name,
-            self.exec_path,
-            self.icon_path,
+            name,
+            exec_path,
+            icon_path,
             if self.terminal { "true" } else { "false" },
-            self.categories.join(";")
+            categories
         )
     }
+}
+
+fn sanitize_desktop_value(value: &str) -> String {
+    value.replace('\\', "\\\\").replace(['\n', '\r'], " ")
 }
 
 #[cfg(test)]
@@ -87,5 +101,23 @@ mod tests {
         let content = entry.to_file_content();
 
         assert!(content.contains("Categories=Utility;Office"));
+    }
+
+    #[test]
+    fn desktop_entry_sanitizes_newlines() {
+        let entry = DesktopEntry::with_categories(
+            "Bad\nName".to_string(),
+            "/usr/local/bin/safe\nexec".to_string(),
+            "icon\rpath".to_string(),
+            vec!["Utility\nInjected".to_string()],
+        );
+
+        let content = entry.to_file_content();
+
+        assert!(!content.contains("\nName=Bad\nName"));
+        assert!(!content.contains("\nExec=/usr/local/bin/safe\nexec"));
+        assert!(content.contains("Name=Bad Name"));
+        assert!(content.contains("Exec=/usr/local/bin/safe exec"));
+        assert!(content.contains("Icon=icon path"));
     }
 }

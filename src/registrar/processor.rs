@@ -261,9 +261,6 @@ impl Processor {
             .join(format!("{}.desktop", normalized_name));
         self.create_desktop_entry(&metadata, &icon_path, &symlink_path, &desktop_path)?;
 
-        info!("Running appimage-update check for {}", normalized_name);
-        let _ = Command::new(&current_appimage).arg("--appimage-update").output();
-
         Ok(ProcessedApp {
             normalized_name,
             appimage_path: app_path.to_path_buf(),
@@ -651,6 +648,5 @@ mod tests {
         assert!(!processor.cache_entry_is_usable(name));
     }
 }
-
 
 
